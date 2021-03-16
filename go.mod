@@ -1,4 +1,4 @@
-module github.com/wuhan005/hoki
+module github.com/wuhan005/Houki
 
 go 1.16
 

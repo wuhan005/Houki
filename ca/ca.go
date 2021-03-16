@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	CommonName       = "Hoki CA"
-	OrganizationName = "Hoki"
+	CommonName       = "Houki CA"
+	OrganizationName = "Houki"
 )
 
 func Get() ([]byte, []byte, error) {

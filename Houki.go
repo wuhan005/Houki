@@ -6,7 +6,7 @@ import (
 
 	log "unknwon.dev/clog/v2"
 
-	"github.com/wuhan005/hoki/proxy"
+	"github.com/wuhan005/Houki/proxy"
 )
 
 func main() {
