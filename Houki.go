@@ -2,8 +2,9 @@ package main
 
 import (
 	"net/http"
-	"os"
 
+	"github.com/wuhan005/Houki/ca"
+	"github.com/wuhan005/Houki/module"
 	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/proxy"
@@ -16,7 +17,10 @@ func main() {
 		panic(err)
 	}
 
-	_ = os.Mkdir(".certificate", 0644)
+	module.Init()
+	module.Load()
+
+	ca.Init()
 
 	p, err := proxy.New()
 	if err != nil {
