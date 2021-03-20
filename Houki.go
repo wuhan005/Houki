@@ -10,7 +10,7 @@ import (
 	"github.com/wuhan005/Houki/internal/conf"
 	"github.com/wuhan005/Houki/internal/module"
 	"github.com/wuhan005/Houki/internal/proxy"
-	"github.com/wuhan005/Houki/internal/web"
+	"github.com/wuhan005/Houki/internal/route"
 	log "unknwon.dev/clog/v2"
 )
 
@@ -39,6 +39,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to initialize modules: %v", err)
 	}
+	module.Load()
 
 	p, err := proxy.New()
 	if err != nil {
@@ -46,7 +47,7 @@ func main() {
 	}
 	p.Run(*proxyPort)
 
-	w := web.New()
+	w := route.New()
 	if err != nil {
 		log.Fatal("Failed to create web server: %v", err)
 	}

@@ -11,35 +11,35 @@ import (
 )
 
 type Request struct {
-	On    string `yaml:"on"`
-	OnPrg cel.Program
+	On    string      `yaml:"on" json:"on"`
+	OnPrg cel.Program `json:"-"`
 
-	Transmit    string `yaml:"transmit"`
-	TransmitURL *url.URL
-	Header      map[string]string      `yaml:"header"`
-	Body        map[string]interface{} `yaml:"body"`
+	Transmit    string                 `yaml:"transmit" json:"transmit"`
+	TransmitURL *url.URL               `json:"-"`
+	Header      map[string]string      `yaml:"header" json:"header"`
+	Body        map[string]interface{} `yaml:"body" json:"-"` //FIXME
 }
 
 type Response struct {
-	On    string `yaml:"on"`
-	OnPrg cel.Program
+	On    string      `yaml:"on" json:"on"`
+	OnPrg cel.Program `json:"-"`
 
-	StatusCode int                    `yaml:"status_code"`
-	Header     map[string]string      `yaml:"header"`
-	Body       map[string]interface{} `yaml:"body"`
+	StatusCode int                    `yaml:"status_code" json:"status_code"`
+	Header     map[string]string      `yaml:"header" json:"header"`
+	Body       map[string]interface{} `yaml:"body" json:"-"` //FIXME
 }
 
 type module struct {
-	Env *cel.Env
+	Env *cel.Env `json:"-"`
 
-	Title       string `yaml:"title"`
-	Author      string `yaml:"author"`
-	Description string `yaml:"description"`
-	ID          string `yaml:"id"`
-	Sign        string `yaml:"sign"`
+	Title       string `yaml:"title" json:"title"`
+	Author      string `yaml:"author" json:"author"`
+	Description string `yaml:"description" json:"description"`
+	ID          string `yaml:"id" json:"id"`
+	Sign        string `yaml:"sign" json:"sign"`
 
-	Req  *Request  `yaml:"request"`
-	Resp *Response `yaml:"response"`
+	Req  *Request  `yaml:"request" json:"request"`
+	Resp *Response `yaml:"response" json:"response"`
 }
 
 func NewModule(filePath string) (*module, error) {

@@ -41,6 +41,10 @@ func Load() []*module {
 	return modules
 }
 
+func List() []*module {
+	return modules
+}
+
 func DoRequest(req *http.Request, body []byte) {
 	for _, mod := range modules {
 		mod.DoRequest(req, body)
