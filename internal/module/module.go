@@ -3,30 +3,41 @@ package module
 import (
 	"net/http"
 	"os"
+	"path/filepath"
+
+	"github.com/pkg/errors"
+	"github.com/wuhan005/Houki/internal/conf"
 
 	log "unknwon.dev/clog/v2"
 )
 
-func Init() {
+func Initialize() error {
 	_, err := os.Stat("modules")
 	if os.IsNotExist(err) {
 		err := os.Mkdir("modules", 0755)
 		if err != nil {
-			log.Fatal("Failed to create modules folder: %v", err)
+			return errors.Wrap(err, "create modules folder")
 		}
-		log.Info("Create modules folder.")
 	}
+	return nil
 }
 
 var modules []*module
 
 // Load loads the module files from modules folder.
 func Load() []*module {
-	module, err := NewModule("./modules/demo.yml")
-	if err != nil {
-		log.Fatal("Load modules: %v", err)
+	moduleList := conf.Get().Modules
+	for _, modName := range moduleList {
+		mod, err := NewModule(filepath.Join("./modules/", modName+".yml"))
+		if err != nil {
+			log.Error("Failed to load module %q: %v", modName, err)
+			continue
+		}
+
+		modules = append(modules, mod)
 	}
-	modules = append(modules, module)
+
+	log.Trace("Load %d modules.", len(modules))
 	return modules
 }
 

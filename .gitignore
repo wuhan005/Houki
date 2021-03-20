@@ -16,3 +16,5 @@
 
 .certificate
 .idea/
+config.json
+modules/

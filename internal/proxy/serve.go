@@ -3,11 +3,10 @@ package proxy
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/elazarl/goproxy"
-	"github.com/wuhan005/Houki/module"
+	"github.com/wuhan005/Houki/internal/module"
 	log "unknwon.dev/clog/v2"
 )
 
@@ -19,7 +18,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Error("Failed to read request body: %v", err)
 		}
-		req.Body = ioutil.NopCloser(bytes.NewReader(body))
+		req.Body = io.NopCloser(bytes.NewReader(body))
 
 		module.DoRequest(req, body)
 
@@ -31,7 +30,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Error("Failed to read response body: %v", err)
 		}
-		resp.Body = ioutil.NopCloser(bytes.NewReader(body))
+		resp.Body = io.NopCloser(bytes.NewReader(body))
 
 		module.DoResponse(resp, body)
 

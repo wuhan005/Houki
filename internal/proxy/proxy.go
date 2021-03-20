@@ -6,7 +6,7 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/pkg/errors"
-	"github.com/wuhan005/Houki/ca"
+	"github.com/wuhan005/Houki/internal/ca"
 )
 
 type Proxy struct {

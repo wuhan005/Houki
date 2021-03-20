@@ -20,15 +20,15 @@ const (
 	OrganizationName = "Houki"
 )
 
-func Init() {
+func Initialize() error {
 	_, err := os.Stat(".certificate")
 	if os.IsNotExist(err) {
 		err := os.Mkdir(".certificate", 0644)
 		if err != nil {
-			log.Fatal("Failed to create .certificate folder: %v", err)
+			return errors.Wrap(err, "create .certificate folder")
 		}
-		log.Info("Create .certificate folder.")
 	}
+	return nil
 }
 
 func Get() ([]byte, []byte, error) {

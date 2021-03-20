@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-	"github.com/wuhan005/Houki/expression"
+	expression2 "github.com/wuhan005/Houki/internal/expression"
 	"gopkg.in/yaml.v2"
 )
 
@@ -70,7 +70,7 @@ func NewModule(filePath string) (*module, error) {
 		mod.Req.TransmitURL = transmitURL
 	}
 
-	env, err := expression.NewEnv()
+	env, err := expression2.NewEnv()
 	if err != nil {
 		return nil, errors.Wrap(err, "new env")
 	}
