@@ -3,19 +3,23 @@ package proxy
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"net/http"
 
 	"github.com/elazarl/goproxy"
 	"github.com/pkg/errors"
 	"github.com/wuhan005/Houki/internal/ca"
+	log "unknwon.dev/clog/v2"
 )
 
 type Proxy struct {
-	server *goproxy.ProxyHttpServer
+	server *http.Server
+	proxy  *goproxy.ProxyHttpServer
 }
 
 func New() (*Proxy, error) {
 	p := &Proxy{
-		server: goproxy.NewProxyHttpServer(),
+		server: &http.Server{},
+		proxy:  goproxy.NewProxyHttpServer(),
 	}
 
 	caCrt, caKey, err := ca.Get()
@@ -46,4 +50,20 @@ func (p *Proxy) SetCA(caCert, caKey []byte) error {
 	goproxy.RejectConnect = &goproxy.ConnectAction{Action: goproxy.ConnectReject, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
 
 	return nil
+}
+
+func (p *Proxy) Run(addr string) {
+	p.server.Addr = addr
+	p.server.Handler = p.proxy
+
+	go func() {
+		if err := p.server.ListenAndServe(); err != http.ErrServerClosed {
+			log.Error("Failed to start proxy server: %v", err)
+		}
+	}()
+	log.Info("Proxy server listening on %s", addr)
+}
+
+func (p *Proxy) Stop() error {
+	return p.server.Shutdown(nil)
 }
