@@ -1,9 +1,14 @@
 package web
 
 import (
+	"io/fs"
 	"net/http"
 
-	"gopkg.in/macaron.v1"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/thanhpk/randstr"
+	"github.com/wuhan005/Houki/frontend"
 	log "unknwon.dev/clog/v2"
 )
 
@@ -12,11 +17,20 @@ type web struct {
 }
 
 func New() *web {
-	m := macaron.Classic()
-	
+	r := gin.Default()
+
+	store := cookie.NewStore([]byte(randstr.String(50)))
+	r.Use(sessions.Sessions("Houki", store))
+
+	fe, err := fs.Sub(frontend.FS, "dist")
+	if err != nil {
+		log.Fatal("Failed to sub path `dist`: %v", err)
+	}
+	r.StaticFS("/", http.FS(fe))
+
 	return &web{
 		server: &http.Server{
-			Handler: m,
+			Handler: r,
 		},
 	}
 }
