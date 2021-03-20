@@ -11,11 +11,28 @@
 
     <main>
       <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <!-- Replace with your content -->
-        <div class="px-4 py-6 sm:px-0">
-          <div class="border-4 border-dashed border-gray-200 rounded-lg h-96"></div>
+        <div class="bg-gray-50">
+          <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
+            <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+              <span v-if="proxyEnabled" class="block text-indigo-600">Proxy started.</span>
+              <span v-else class="block text-black-600">Proxy stopped.</span>
+            </h2>
+            <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+              <div class="inline-flex rounded-md shadow" v-if="proxyEnabled">
+                <a class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-red-600"
+                   @click="stopProxy">
+                  Stop
+                </a>
+              </div>
+              <div class="inline-flex rounded-md shadow" v-else>
+                <a class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600"
+                   @click="startProxy">
+                  Start
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
-        <!-- /End replace -->
       </div>
     </main>
   </div>
@@ -26,6 +43,34 @@ import Nav from "../components/Nav";
 
 export default {
   name: 'Dashboard',
+
+  data() {
+    return {
+      proxyEnabled: false
+    }
+  },
+
+  mounted() {
+    this.getProxyStatus()
+  },
+
+  methods: {
+    getProxyStatus() {
+      this.utils.GET('/proxy/status').then(res => {
+        this.proxyEnabled = res.enable
+      })
+    },
+    startProxy() {
+      this.utils.POST('/proxy/start').then(res => {
+        this.getProxyStatus()
+      })
+    },
+    stopProxy() {
+      this.utils.POST('/proxy/stop').then(res => {
+        this.getProxyStatus()
+      })
+    }
+  },
   components: {
     Nav
   }

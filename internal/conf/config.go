@@ -11,11 +11,16 @@ import (
 const configName = "config.json"
 
 type config struct {
-	Version string   `json:"version"`
-	Modules []string `json:"modules"`
+	Version   string   `json:"version"`
+	ProxyAddr string   `json:"proxy_addr"`
+	Modules   []string `json:"modules"`
 }
 
-var conf config
+var conf config = config{
+	Version:   "",
+	ProxyAddr: ":8080",
+	Modules:   nil,
+}
 
 func Initialize() error {
 	_, err := os.Stat(configName)

@@ -13,6 +13,7 @@ import (
 
 	"github.com/wuhan005/Houki/frontend"
 	"github.com/wuhan005/Houki/internal/route/module"
+	"github.com/wuhan005/Houki/internal/route/proxy"
 )
 
 type web struct {
@@ -33,6 +34,13 @@ func New() *web {
 	r.Use(sessions.Sessions("Houki", store))
 
 	api := r.Group("/api")
+	// Proxy
+	pxy := api.Group("/proxy")
+	pxy.GET("/status", __(proxy.GetStatus))
+	pxy.POST("/start", __(proxy.Start))
+	pxy.POST("/stop", __(proxy.Stop))
+
+	// Modules
 	api.GET("/modules", __(module.GetModules))
 
 	fe, err := fs.Sub(frontend.FS, "dist")

@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"net/http"
@@ -8,18 +9,21 @@ import (
 	"github.com/elazarl/goproxy"
 	"github.com/pkg/errors"
 	"github.com/wuhan005/Houki/internal/ca"
+	"github.com/wuhan005/Houki/internal/conf"
 	log "unknwon.dev/clog/v2"
 )
 
+var proxy *Proxy
+
 type Proxy struct {
+	enable bool
 	server *http.Server
 	proxy  *goproxy.ProxyHttpServer
 }
 
-func New() (*Proxy, error) {
+func Initialize() (*Proxy, error) {
 	p := &Proxy{
-		server: &http.Server{},
-		proxy:  goproxy.NewProxyHttpServer(),
+		proxy: goproxy.NewProxyHttpServer(),
 	}
 
 	caCrt, caKey, err := ca.Get()
@@ -31,7 +35,27 @@ func New() (*Proxy, error) {
 		return nil, errors.Wrap(err, "set CA")
 	}
 
+	proxy = p
 	return p, nil
+}
+
+func IsEnable() bool {
+	return proxy.isEnable()
+}
+
+func Start() {
+	if proxy.enable {
+		return
+	}
+	addr := conf.Get().ProxyAddr
+	proxy.run(addr)
+}
+
+func Stop() error {
+	if !proxy.enable {
+		return errors.New("Proxy server has been started.")
+	}
+	return proxy.stop()
 }
 
 func (p *Proxy) SetCA(caCert, caKey []byte) error {
@@ -52,18 +76,32 @@ func (p *Proxy) SetCA(caCert, caKey []byte) error {
 	return nil
 }
 
-func (p *Proxy) Run(addr string) {
+func (p *Proxy) run(addr string) {
+	p.server = &http.Server{}
 	p.server.Addr = addr
 	p.server.Handler = p.proxy
 
 	go func() {
-		if err := p.server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := p.server.ListenAndServe(); err == http.ErrServerClosed {
+			log.Trace("Server closed.")
+		} else if err != nil {
 			log.Error("Failed to start proxy server: %v", err)
 		}
 	}()
+	p.enable = true
 	log.Info("Proxy server listening on %s", addr)
 }
 
-func (p *Proxy) Stop() error {
-	return p.server.Shutdown(nil)
+func (p *Proxy) stop() error {
+	err := p.server.Shutdown(context.Background())
+	if err != nil {
+		return errors.Wrap(err, "shut down")
+	}
+
+	p.enable = false
+	return nil
+}
+
+func (p *Proxy) isEnable() bool {
+	return p.enable
 }

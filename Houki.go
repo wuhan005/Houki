@@ -21,8 +21,7 @@ func main() {
 		panic(err)
 	}
 
-	proxyPort := flag.String("proxy-port", ":8080", "Proxy port")
-	webPort := flag.String("web-port", ":8000", "Web panel port")
+	port := flag.String("port", ":8000", "Web panel port")
 	flag.Parse()
 
 	err = conf.Initialize()
@@ -41,17 +40,17 @@ func main() {
 	}
 	module.Load()
 
-	p, err := proxy.New()
+	_, err = proxy.Initialize()
 	if err != nil {
 		log.Fatal("Failed to create proxy: %v", err)
 	}
-	p.Run(*proxyPort)
+	proxy.Start()
 
 	w := route.New()
 	if err != nil {
 		log.Fatal("Failed to create web server: %v", err)
 	}
-	w.Run(*webPort)
+	w.Run(*port)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
