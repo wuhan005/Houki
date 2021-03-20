@@ -1,6 +1,7 @@
 package route
 
 import (
+	"context"
 	"io/fs"
 	"net/http"
 
@@ -68,7 +69,7 @@ func (w *web) Run(addr string) {
 }
 
 func (w *web) Stop() error {
-	return w.server.Shutdown(nil)
+	return w.server.Shutdown(context.Background())
 }
 
 func __(handler func(*gin.Context) (int, interface{})) func(*gin.Context) {
