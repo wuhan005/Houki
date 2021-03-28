@@ -25,8 +25,7 @@ type Proxy struct {
 
 func Initialize() (*Proxy, error) {
 	p := &Proxy{
-		Server: http.Server{},
-		proxy:  goproxy.NewProxyHttpServer(),
+		proxy: goproxy.NewProxyHttpServer(),
 	}
 
 	caCrt, caKey, err := ca.Get()
@@ -82,8 +81,10 @@ func (p *Proxy) SetCA(caCert, caKey []byte) error {
 func (p *Proxy) run(addr string) {
 	p.serve()
 
-	p.Server.Addr = addr
-	p.Server.Handler = p.proxy
+	p.Server = http.Server{
+		Addr:    addr,
+		Handler: p.proxy,
+	}
 
 	go func() {
 		if err := p.Server.ListenAndServe(); err == http.ErrServerClosed {
