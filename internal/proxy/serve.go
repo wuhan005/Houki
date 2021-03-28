@@ -6,11 +6,13 @@ import (
 	"net/http"
 
 	"github.com/elazarl/goproxy"
-	"github.com/wuhan005/Houki/internal/module"
 	log "unknwon.dev/clog/v2"
+
+	"github.com/wuhan005/Houki/internal/module"
+	"github.com/wuhan005/Houki/internal/sse"
 )
 
-func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *Proxy) serve() {
 	p.proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
@@ -19,6 +21,15 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.Error("Failed to read request body: %v", err)
 		}
 		req.Body = io.NopCloser(bytes.NewReader(body))
+
+		// Send log
+		err = sse.Write("request", map[string]interface{}{
+			"method": req.Method,
+			"url":    req.URL.String(),
+		})
+		if err != nil {
+			log.Error("Failed to send log: %v", err)
+		}
 
 		module.DoRequest(req, body)
 
@@ -36,6 +47,4 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		return resp
 	})
-
-	p.proxy.ServeHTTP(w, r)
 }

@@ -6,12 +6,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	log "unknwon.dev/clog/v2"
+
 	"github.com/wuhan005/Houki/internal/ca"
 	"github.com/wuhan005/Houki/internal/conf"
 	"github.com/wuhan005/Houki/internal/module"
 	"github.com/wuhan005/Houki/internal/proxy"
 	"github.com/wuhan005/Houki/internal/route"
-	log "unknwon.dev/clog/v2"
+	"github.com/wuhan005/Houki/internal/sse"
 )
 
 func main() {
@@ -39,6 +41,8 @@ func main() {
 		log.Fatal("Failed to initialize modules: %v", err)
 	}
 	module.Load()
+
+	sse.Initialize()
 
 	_, err = proxy.Initialize()
 	if err != nil {

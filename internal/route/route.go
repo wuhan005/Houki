@@ -34,6 +34,8 @@ func New() *web {
 	store := cookie.NewStore([]byte(randstr.String(50)))
 	r.Use(sessions.Sessions("Houki", store))
 
+	r.GET("/logs", proxy.LogHandler)
+
 	api := r.Group("/api")
 	// Proxy
 	pxy := api.Group("/proxy")

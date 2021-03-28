@@ -8,22 +8,25 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/pkg/errors"
+	log "unknwon.dev/clog/v2"
+
 	"github.com/wuhan005/Houki/internal/ca"
 	"github.com/wuhan005/Houki/internal/conf"
-	log "unknwon.dev/clog/v2"
 )
 
 var proxy *Proxy
 
 type Proxy struct {
+	http.Server
+
 	enable bool
-	server *http.Server
 	proxy  *goproxy.ProxyHttpServer
 }
 
 func Initialize() (*Proxy, error) {
 	p := &Proxy{
-		proxy: goproxy.NewProxyHttpServer(),
+		Server: http.Server{},
+		proxy:  goproxy.NewProxyHttpServer(),
 	}
 
 	caCrt, caKey, err := ca.Get()
@@ -77,23 +80,25 @@ func (p *Proxy) SetCA(caCert, caKey []byte) error {
 }
 
 func (p *Proxy) run(addr string) {
-	p.server = &http.Server{}
-	p.server.Addr = addr
-	p.server.Handler = p.proxy
+	p.serve()
+
+	p.Server.Addr = addr
+	p.Server.Handler = p.proxy
 
 	go func() {
-		if err := p.server.ListenAndServe(); err == http.ErrServerClosed {
+		if err := p.Server.ListenAndServe(); err == http.ErrServerClosed {
 			log.Trace("Server closed.")
 		} else if err != nil {
 			log.Error("Failed to start proxy server: %v", err)
 		}
 	}()
 	p.enable = true
+
 	log.Info("Proxy server listening on %s", addr)
 }
 
 func (p *Proxy) stop() error {
-	err := p.server.Shutdown(context.Background())
+	err := p.Shutdown(context.TODO())
 	if err != nil {
 		return errors.Wrap(err, "shut down")
 	}
