@@ -6,9 +6,9 @@ import (
 
 // Line is a single line of the log.
 type Line struct {
-	Type      string      `json:"Type"`
-	Message   interface{} `json:"Message"`
-	Timestamp int64       `json:"Time"`
+	Type      string      `json:"type"`
+	Message   interface{} `json:"message"`
+	Timestamp int64       `json:"time"`
 }
 
 // NewLine creates a line.

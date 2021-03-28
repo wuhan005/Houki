@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/elazarl/goproxy"
 	log "unknwon.dev/clog/v2"
@@ -25,7 +26,9 @@ func (p *Proxy) serve() {
 		// Send log
 		err = sse.Write("request", map[string]interface{}{
 			"method": req.Method,
-			"url":    req.URL.String(),
+			"host":   req.URL.Host,
+			"path":   req.URL.Path,
+			"time":   time.Now().Unix(),
 		})
 		if err != nil {
 			log.Error("Failed to send log: %v", err)
@@ -37,14 +40,18 @@ func (p *Proxy) serve() {
 	})
 
 	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-		body, err := io.ReadAll(resp.Body)
+		if ctx.Resp == nil || ctx.Resp.Header.Get("Content-Type") == "text/event-stream" {
+			return ctx.Resp
+		}
+
+		body, err := io.ReadAll(ctx.Resp.Body)
 		if err != nil {
 			log.Error("Failed to read response body: %v", err)
 		}
-		resp.Body = io.NopCloser(bytes.NewReader(body))
+		ctx.Resp.Body = io.NopCloser(bytes.NewReader(body))
 
-		module.DoResponse(resp, body)
+		module.DoResponse(ctx.Resp, body)
 
-		return resp
+		return ctx.Resp
 	})
 }

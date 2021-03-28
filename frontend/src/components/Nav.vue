@@ -21,6 +21,10 @@
                 <a :class="activeCSS('Store')"
                    class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Store</a>
               </router-link>
+              <router-link to="/logs">
+                <a :class="activeCSS('Logs')"
+                   class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Logs</a>
+              </router-link>
             </div>
           </div>
         </div>

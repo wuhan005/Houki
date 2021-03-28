@@ -99,7 +99,7 @@ func (p *Proxy) run(addr string) {
 }
 
 func (p *Proxy) stop() error {
-	err := p.Shutdown(context.TODO())
+	err := p.Server.Shutdown(context.TODO())
 	if err != nil {
 		return errors.Wrap(err, "shut down")
 	}
