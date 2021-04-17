@@ -1,3 +1,7 @@
+// Copyright 2021 E99p1ant. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package cmd
 
 import (
@@ -51,6 +55,9 @@ func runWeb(c *cli.Context) error {
 	pxy.GET("/status", __(proxy.GetStatus))
 	pxy.POST("/start", __(proxy.Start))
 	pxy.POST("/stop", __(proxy.Stop))
+	// Proxy CA
+	pxy.POST("/ca/generate")
+	pxy.GET("/ca/download")
 
 	// Modules
 	api.GET("/modules", __(module.ListModules))
