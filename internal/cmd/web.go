@@ -56,8 +56,8 @@ func runWeb(c *cli.Context) error {
 	pxy.POST("/start", __(proxy.Start))
 	pxy.POST("/stop", __(proxy.Stop))
 	// Proxy CA
-	pxy.POST("/ca/generate")
-	pxy.GET("/ca/download")
+	pxy.GET("/ca", __(proxy.FetchCA))
+	pxy.POST("/ca/generate", __(proxy.GenerateCA))
 
 	// Modules
 	api.GET("/modules", __(module.ListModules))

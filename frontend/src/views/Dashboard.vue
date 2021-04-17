@@ -5,12 +5,20 @@
         <div v-if="proxyEnabled">
           <p class="title">Proxy started.</p>
           <p class="subtitle">Listening on ...</p>
-          <b-button type="is-danger is-light" @click="stopProxy">Stop proxy</b-button>
+          <div class="buttons">
+            <b-button type="is-danger is-light" @click="stopProxy">Stop proxy</b-button>
+            <b-button type="is-info is-light" @click="downloadCA">Download CA</b-button>
+            <b-button type="is-info is-light" @click="generateCA">Generate a new CA</b-button>
+          </div>
         </div>
         <div v-else>
           <p class="title">Proxy stopped.</p>
           <p class="subtitle"></p>
-          <b-button type="is-primary is-light" @click="startProxy">Start proxy</b-button>
+          <div class="buttons">
+            <b-button type="is-primary is-light" @click="startProxy">Start proxy</b-button>
+            <b-button type="is-info is-light" @click="downloadCA">Download CA</b-button>
+            <b-button type="is-info is-light" @click="generateCA">Generate a new CA</b-button>
+          </div>
         </div>
       </div>
     </section>
@@ -18,6 +26,8 @@
 </template>
 
 <script>
+import {saveAs} from 'file-saver'
+
 export default {
   name: 'Dashboard',
 
@@ -47,6 +57,16 @@ export default {
     stopProxy() {
       this.utils.POST('/proxy/stop').then(res => {
         this.getProxyStatus()
+      })
+    },
+    generateCA() {
+      this.utils.POST('/proxy/ca/generate').then(res => {
+        saveAs(new Blob([res]), 'houki_ca.crt')
+      }).catch(err => this.$buefy.toast.open({message: err.response.data.msg, type: 'is-danger'}))
+    },
+    downloadCA() {
+      this.utils.GET('/proxy/ca').then(res => {
+        saveAs(new Blob([res]), 'houki_ca.crt')
       })
     }
   }
