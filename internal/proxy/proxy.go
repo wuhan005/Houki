@@ -11,7 +11,6 @@ import (
 	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/internal/ca"
-	"github.com/wuhan005/Houki/internal/conf"
 )
 
 var proxy *Proxy
@@ -45,11 +44,10 @@ func IsEnable() bool {
 	return proxy.isEnable()
 }
 
-func Start() {
+func Start(addr string) {
 	if proxy.enable {
 		return
 	}
-	addr := conf.Get().ProxyAddr
 	proxy.run(addr)
 }
 
@@ -85,15 +83,16 @@ func (p *Proxy) run(addr string) {
 		Addr:    addr,
 		Handler: p.proxy,
 	}
+	p.enable = true
 
 	go func() {
 		if err := p.Server.ListenAndServe(); err == http.ErrServerClosed {
 			log.Trace("Server closed.")
 		} else if err != nil {
+			p.enable = false
 			log.Error("Failed to start proxy server: %v", err)
 		}
 	}()
-	p.enable = true
 
 	log.Info("Proxy server listening on %s", addr)
 }

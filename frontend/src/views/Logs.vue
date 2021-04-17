@@ -10,8 +10,8 @@
     </header>
 
     <main>
-      <div class="bg-white py-8">
-        <div class="max-w-7xl mx-auto px-6">
+      <div class="bg-white">
+        <div class="max-w-7xl mx-auto">
           <div>
             <ul class="divide-y divide-gray-200" x-max="1" v-if="logs.length !== 0">
               <li v-for="(request, index) in logs" v-bind:key="index" class="py-4">
@@ -84,8 +84,8 @@ export default {
     },
 
     push(data) {
-      if (this.logs.length > 30) {
-        this.logs = this.logs.slice(0, 30)
+      if (this.logs.length > 13) {
+        this.logs = this.logs.slice(0, 13)
       }
       this.logs.unshift(data)
     }

@@ -38,31 +38,50 @@
 
                   <tbody class="bg-white divide-y divide-gray-200">
 
-                  <tr v-for="(module, index) in modules" v-bind:key="index">
+                  <tr v-for="(mod, index) in module.list" v-bind:key="index">
                     <td class="px-6 py-4 whitespace-nowrap">
                       <div class="flex items-center">
                         <div>
-                          <div class="text-sm font-medium text-gray-900">{{ module.title }}</div>
-                          <div class="text-sm text-gray-500">{{ module.id }}</div>
+                          <div class="text-sm font-medium text-gray-900">{{ mod.title }}</div>
+                          <div class="text-sm text-gray-500">{{ mod.id }}</div>
                         </div>
                       </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{{ module.description }}</div>
+                      <div class="text-sm text-gray-900">{{ mod.description }}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {{ module.author }}
+                      {{ mod.author }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                      <span
-                          class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      <span v-if="module.enabled_modules.includes(mod.id)"
+                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Active
+                      </span>
+                      <span v-else
+                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Inactive
                       </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <a class="text-green-600 hover:text-indigo-900">Enable</a>
-                      <a class="text-indigo-600 hover:text-indigo-900">Disable</a>
-                      <a class="text-red-600 hover:text-indigo-900">Delete</a>
+                      <span class="relative z-0 inline-flex shadow-sm rounded-md">
+                        <button v-if="!module.enabled_modules.includes(mod.id)"
+                                @click="enableModule(mod.id)"
+                                type="button"
+                                class="text-green-600 hover:text-indigo-900 relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm leading-5 font-medium text-gray-700 hover:text-gray-500 focus:z-10 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150">
+                          Enable
+                        </button>
+                        <button v-else
+                                @click="disableModule(mod.id)"
+                                type="button"
+                                class="text-indigo-600 hover:text-indigo-900 -ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm leading-5 font-medium text-gray-700 hover:text-gray-500 focus:z-10 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150">
+                          Disable
+                        </button>
+                        <button type="button"
+                                class="text-red-600 hover:text-indigo-900 -ml-px relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm leading-5 font-medium text-gray-700 hover:text-gray-500 focus:z-10 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150">
+                          Delete
+                        </button>
+                      </span>
                     </td>
                   </tr>
 
@@ -85,7 +104,7 @@ export default {
   name: "Modules",
   data() {
     return {
-      modules: []
+      module: []
     }
   },
 
@@ -96,9 +115,20 @@ export default {
   methods: {
     getModuleList() {
       this.utils.GET('/modules').then(res => {
-        this.modules = res
+        this.module = res
       }).catch((err) => {
 
+      })
+    },
+
+    enableModule(modID) {
+      this.utils.POST(`/module/enable/${modID}`).then(res => {
+        this.getModuleList()
+      })
+    },
+    disableModule(modID) {
+      this.utils.POST(`/module/disable/${modID}`).then(res => {
+        this.getModuleList()
       })
     }
   },

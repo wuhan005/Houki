@@ -3,11 +3,13 @@ package module
 import (
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-	expression2 "github.com/wuhan005/Houki/internal/expression"
 	"gopkg.in/yaml.v2"
+
+	"github.com/wuhan005/Houki/internal/expression"
 )
 
 type Request struct {
@@ -32,6 +34,8 @@ type Response struct {
 type module struct {
 	Env *cel.Env `json:"-"`
 
+	FileName string `yaml:"-" json:"file_name"`
+
 	Title       string `yaml:"title" json:"title"`
 	Author      string `yaml:"author" json:"author"`
 	Description string `yaml:"description" json:"description"`
@@ -43,15 +47,9 @@ type module struct {
 }
 
 func NewModule(filePath string) (*module, error) {
-	raw, err := os.ReadFile(filePath)
+	mod, err := ParseFile(filePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "read file")
-	}
-
-	var mod module
-	err = yaml.Unmarshal(raw, &mod)
-	if err != nil {
-		return nil, errors.Wrap(err, "parse module yaml")
+		return nil, errors.Wrap(err, "parse module file")
 	}
 
 	if mod.Req.On == "" {
@@ -70,7 +68,7 @@ func NewModule(filePath string) (*module, error) {
 		mod.Req.TransmitURL = transmitURL
 	}
 
-	env, err := expression2.NewEnv()
+	env, err := expression.NewEnv()
 	if err != nil {
 		return nil, errors.Wrap(err, "new env")
 	}
@@ -86,6 +84,22 @@ func NewModule(filePath string) (*module, error) {
 		return nil, errors.Wrap(err, "parse response `on`")
 	}
 
+	return mod, nil
+}
+
+func ParseFile(filePath string) (*module, error) {
+	raw, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "read file")
+	}
+
+	var mod module
+	err = yaml.Unmarshal(raw, &mod)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse module yaml")
+	}
+
+	mod.FileName = filepath.Base(filePath)
 	return &mod, nil
 }
 

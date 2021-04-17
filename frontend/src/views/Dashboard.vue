@@ -12,10 +12,14 @@
     <main>
       <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div class="bg-gray-50">
-          <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
+          <div v-if="proxyEnabled !== null"
+               class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
             <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
               <span v-if="proxyEnabled" class="block text-indigo-600">Proxy started.</span>
               <span v-else class="block text-black-600">Proxy stopped.</span>
+              <dt v-if="proxyEnabled" class="text-sm leading-5 font-medium text-gray-500 truncate">
+                Listening on ...
+              </dt>
             </h2>
             <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
               <div class="inline-flex rounded-md shadow" v-if="proxyEnabled">
@@ -46,7 +50,7 @@ export default {
 
   data() {
     return {
-      proxyEnabled: false
+      proxyEnabled: null
     }
   },
 
@@ -61,7 +65,9 @@ export default {
       })
     },
     startProxy() {
-      this.utils.POST('/proxy/start').then(res => {
+      this.utils.POST('/proxy/start', {
+        'address': '0.0.0.0:8880',
+      }).then(res => {
         this.getProxyStatus()
       })
     },

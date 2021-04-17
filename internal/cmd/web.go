@@ -1,7 +1,7 @@
-package route
+package cmd
 
 import (
-	"context"
+	"fmt"
 	"io/fs"
 	"net/http"
 
@@ -10,30 +10,39 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/thanhpk/randstr"
+	"github.com/urfave/cli/v2"
 	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/frontend"
 	"github.com/wuhan005/Houki/internal/route/module"
 	"github.com/wuhan005/Houki/internal/route/proxy"
+	"github.com/wuhan005/Houki/internal/sse"
 )
 
-type web struct {
-	server *http.Server
+var Web = &cli.Command{
+	Name:        "web",
+	Usage:       "Start web server",
+	Description: "",
+	Action:      runWeb,
+	Flags: []cli.Flag{
+		stringFlag("port, p", "8000", "Temporary port number to prevent conflict"),
+	},
 }
 
-func New() *web {
+func runWeb(c *cli.Context) error {
 	r := gin.Default()
-
+	// TODO remove CORS headers
 	r.Use(cors.New(cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"},
 		AllowHeaders:     []string{"Content-type", "User-Agent"},
 		AllowCredentials: true,
-		AllowOrigins:     []string{"http://localhost:8081"},
+		AllowOrigins:     []string{"http://localhost:8080"},
 	}))
 
 	store := cookie.NewStore([]byte(randstr.String(50)))
 	r.Use(sessions.Sessions("Houki", store))
 
+	sse.Initialize()
 	api := r.Group("/api")
 	api.GET("/logs", proxy.LogHandler)
 
@@ -44,34 +53,19 @@ func New() *web {
 	pxy.POST("/stop", __(proxy.Stop))
 
 	// Modules
-	api.GET("/modules", __(module.GetModules))
+	api.GET("/modules", __(module.ListModules))
+	api.POST("/module/enable/:id", __(module.EnableModule))
+	api.POST("/module/disable/:id", __(module.DisableModule))
 
+	// Frontend static assets
 	fe, err := fs.Sub(frontend.FS, "dist")
 	if err != nil {
 		log.Fatal("Failed to sub path `dist`: %v", err)
 	}
 	r.StaticFS("/m", http.FS(fe))
 
-	return &web{
-		server: &http.Server{
-			Handler: r,
-		},
-	}
-}
-
-func (w *web) Run(addr string) {
-	w.server.Addr = addr
-
-	go func() {
-		if err := w.server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Error("Failed to start web server: %v", err)
-		}
-	}()
-	log.Info("Web server listening on %s", addr)
-}
-
-func (w *web) Stop() error {
-	return w.server.Shutdown(context.Background())
+	httpPort := c.String("port")
+	return r.Run(fmt.Sprintf("%s:%s", "0.0.0.0", httpPort))
 }
 
 func __(handler func(*gin.Context) (int, interface{})) func(*gin.Context) {

@@ -12,7 +12,7 @@ import (
 )
 
 func (m *module) DoRequest(req *http.Request, body []byte) {
-	if !m.requestActive(req, body) {
+	if !m.isRequestHit(req, body) {
 		return
 	}
 
@@ -48,7 +48,7 @@ func (m *module) DoRequest(req *http.Request, body []byte) {
 	req.Body = io.NopCloser(bytes.NewBuffer(body))
 }
 
-func (m *module) requestActive(req *http.Request, body []byte) bool {
+func (m *module) isRequestHit(req *http.Request, body []byte) bool {
 	result, _, err := m.Req.OnPrg.Eval(map[string]interface{}{
 		"method":  req.Method,
 		"url":     req.URL.String(),
@@ -71,7 +71,7 @@ func (m *module) requestActive(req *http.Request, body []byte) bool {
 }
 
 func (m *module) DoResponse(resp *http.Response, body []byte) {
-	if !m.responseActive(resp, body) {
+	if !m.isResponseHit(resp, body) {
 		return
 	}
 
@@ -114,7 +114,7 @@ func (m *module) DoResponse(resp *http.Response, body []byte) {
 	resp.Body = io.NopCloser(bytes.NewBuffer(body))
 }
 
-func (m *module) responseActive(resp *http.Response, body []byte) bool {
+func (m *module) isResponseHit(resp *http.Response, body []byte) bool {
 	result, _, err := m.Resp.OnPrg.Eval(map[string]interface{}{
 		"url":         resp.Request.URL.String(),
 		"status_code": resp.StatusCode,
