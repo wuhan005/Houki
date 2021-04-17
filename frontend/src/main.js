@@ -3,10 +3,13 @@ import App from './App.vue'
 import './registerServiceWorker'
 import router from './router'
 import utils from './utils'
-import '@/assets/css/tailwind.css'
+import Buefy from 'buefy'
+import 'buefy/dist/buefy.css'
 
 Vue.prototype.utils = utils
 Vue.config.productionTip = false
+
+Vue.use(Buefy)
 
 new Vue({
     router,
