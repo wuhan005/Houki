@@ -77,13 +77,3 @@ func (s *stream) subscribe(ctx context.Context) (<-chan *Line, <-chan error) {
 	}()
 	return sub.handler, err
 }
-
-func (s *stream) close() error {
-	s.Lock()
-	defer s.Unlock()
-	for sub := range s.sub {
-		delete(s.sub, sub)
-		sub.close()
-	}
-	return nil
-}

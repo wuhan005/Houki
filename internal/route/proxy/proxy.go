@@ -22,7 +22,9 @@ func Start(c *gin.Context) (int, interface{}) {
 		return gadget.MakeErrJSON(40000, "Unexpected proxy address %q: %v", input.Address, err)
 	}
 
-	proxy.Start(input.Address)
+	if err := proxy.Start(input.Address); err != nil {
+		return gadget.MakeErrJSON(50000, "Failed to start proxy: %v", err)
+	}
 
 	if _, err := module.Reload(); err != nil {
 		return gadget.MakeErrJSON(50000, "Failed to reload modules: %v", err)

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"net/http"
+	"time"
 
 	"github.com/elazarl/goproxy"
 	"github.com/pkg/errors"
@@ -23,9 +24,7 @@ type Proxy struct {
 }
 
 func Initialize() (*Proxy, error) {
-	p := &Proxy{
-		proxy: goproxy.NewProxyHttpServer(),
-	}
+	p := &Proxy{}
 
 	caCrt, caKey, err := ca.Get()
 	if err != nil {
@@ -44,11 +43,11 @@ func IsEnable() bool {
 	return proxy.isEnable()
 }
 
-func Start(addr string) {
+func Start(addr string) error {
 	if proxy.enable {
-		return
+		return nil
 	}
-	proxy.run(addr)
+	return proxy.run(addr)
 }
 
 func Stop() error {
@@ -76,7 +75,8 @@ func (p *Proxy) SetCA(caCert, caKey []byte) error {
 	return nil
 }
 
-func (p *Proxy) run(addr string) {
+func (p *Proxy) run(addr string) error {
+	p.proxy = goproxy.NewProxyHttpServer()
 	p.serve()
 
 	p.Server = http.Server{
@@ -85,16 +85,24 @@ func (p *Proxy) run(addr string) {
 	}
 	p.enable = true
 
+	errChan := make(chan error)
 	go func() {
 		if err := p.Server.ListenAndServe(); err == http.ErrServerClosed {
 			log.Trace("Server closed.")
 		} else if err != nil {
+			errChan <- err
 			p.enable = false
 			log.Error("Failed to start proxy server: %v", err)
 		}
 	}()
 
-	log.Info("Proxy server listening on %s", addr)
+	select {
+	case err := <-errChan:
+		return err
+	case <-time.After(2 * time.Second):
+		log.Info("Proxy server listening on %s", addr)
+		return nil
+	}
 }
 
 func (p *Proxy) stop() error {
