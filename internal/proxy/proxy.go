@@ -18,8 +18,9 @@ import (
 	"github.com/wuhan005/Houki/internal/ca"
 )
 
-var proxy *Proxy
+var defaultProxy *Proxy
 
+// Proxy is the MitM server which supports start and shutdown.
 type Proxy struct {
 	http.Server
 
@@ -27,61 +28,50 @@ type Proxy struct {
 	proxy  *goproxy.ProxyHttpServer
 }
 
-func Initialize() (*Proxy, error) {
+// SetDefaultProxy initializes the proxy and returns the proxy instance.
+func SetDefaultProxy() (*Proxy, error) {
 	p := &Proxy{}
 
 	caCrt, caKey, err := ca.Get()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "get CA")
 	}
-
 	if err := p.SetCA(caCrt, caKey); err != nil {
 		return nil, errors.Wrap(err, "set CA")
 	}
 
-	proxy = p
+	defaultProxy = p
 	return p, nil
 }
 
-func IsEnable() bool {
-	return proxy.isEnable()
+// Enabled returns the proxy status.
+func Enabled() bool {
+	return defaultProxy.enable
 }
 
+// Start starts the proxy.
+// If the proxy has already been started, it will do nothing.
 func Start(addr string) error {
-	if proxy.enable {
+	if defaultProxy.enable {
 		return nil
 	}
-	return proxy.run(addr)
+	return defaultProxy.run(addr)
 }
 
-func Stop() error {
-	if !proxy.enable {
-		return errors.New("Proxy server has been started.")
-	}
-	return proxy.stop()
-}
+var ErrProxyHasBennStarted = errors.New("Proxy server has been started.")
 
-func (p *Proxy) SetCA(caCert, caKey []byte) error {
-	proxyCA, err := tls.X509KeyPair(caCert, caKey)
-	if err != nil {
-		return err
+// Shutdown shuts down the proxy server.
+// It returns ErrProxyHasBennStarted if the server has already been shut down.
+func Shutdown() error {
+	if !defaultProxy.enable {
+		return ErrProxyHasBennStarted
 	}
-	if proxyCA.Leaf, err = x509.ParseCertificate(proxyCA.Certificate[0]); err != nil {
-		return err
-	}
-
-	goproxy.GoproxyCa = proxyCA
-	goproxy.OkConnect = &goproxy.ConnectAction{Action: goproxy.ConnectAccept, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
-	goproxy.MitmConnect = &goproxy.ConnectAction{Action: goproxy.ConnectMitm, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
-	goproxy.HTTPMitmConnect = &goproxy.ConnectAction{Action: goproxy.ConnectHTTPMitm, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
-	goproxy.RejectConnect = &goproxy.ConnectAction{Action: goproxy.ConnectReject, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
-
-	return nil
+	return defaultProxy.shutdown()
 }
 
 func (p *Proxy) run(addr string) error {
 	p.proxy = goproxy.NewProxyHttpServer()
-	p.serve()
+	p.registerDispatcher()
 
 	p.Server = http.Server{
 		Addr:    addr,
@@ -103,13 +93,14 @@ func (p *Proxy) run(addr string) error {
 	select {
 	case err := <-errChan:
 		return err
-	case <-time.After(2 * time.Second):
+
+	case <-time.After(2 * time.Second): // We trust the server has been started successfully if no error received after 2 seconds.
 		log.Info("Proxy server listening on %s", addr)
 		return nil
 	}
 }
 
-func (p *Proxy) stop() error {
+func (p *Proxy) shutdown() error {
 	err := p.Server.Shutdown(context.TODO())
 	if err != nil {
 		return errors.Wrap(err, "shut down")
@@ -121,4 +112,23 @@ func (p *Proxy) stop() error {
 
 func (p *Proxy) isEnable() bool {
 	return p.enable
+}
+
+// SetCA sets the goproxy server certificate globally.
+func (p *Proxy) SetCA(caCert, caKey []byte) error {
+	proxyCA, err := tls.X509KeyPair(caCert, caKey)
+	if err != nil {
+		return errors.Wrap(err, "parse X509 key pair")
+	}
+	if proxyCA.Leaf, err = x509.ParseCertificate(proxyCA.Certificate[0]); err != nil {
+		return errors.Wrap(err, "parse certificate")
+	}
+
+	goproxy.GoproxyCa = proxyCA
+	goproxy.OkConnect = &goproxy.ConnectAction{Action: goproxy.ConnectAccept, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
+	goproxy.MitmConnect = &goproxy.ConnectAction{Action: goproxy.ConnectMitm, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
+	goproxy.HTTPMitmConnect = &goproxy.ConnectAction{Action: goproxy.ConnectHTTPMitm, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
+	goproxy.RejectConnect = &goproxy.ConnectAction{Action: goproxy.ConnectReject, TLSConfig: goproxy.TLSConfigFromCA(&proxyCA)}
+
+	return nil
 }
