@@ -24,7 +24,13 @@ const (
 	OrganizationName = "Houki"
 )
 
-func Initialize() error {
+func init() {
+	if err := createFolder(); err != nil {
+		log.Fatal("Failed to create certificate folder: %v", err)
+	}
+}
+
+func createFolder() error {
 	_, err := os.Stat(".certificate")
 	if os.IsNotExist(err) {
 		err := os.Mkdir(".certificate", 0644)
@@ -35,17 +41,18 @@ func Initialize() error {
 	return nil
 }
 
+// Get trys to read certificate from file.
+// It will create the certificate if fails.
 func Get() ([]byte, []byte, error) {
 	crt, key, err := readFromFile()
 	if err == nil {
-		log.Trace("Read CA from file.")
 		return crt, key, nil
 	}
 
-	return Generate(true)
+	return GenerateCertificate(true)
 }
 
-func Generate(save bool) ([]byte, []byte, error) {
+func GenerateCertificate(save bool) ([]byte, []byte, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
