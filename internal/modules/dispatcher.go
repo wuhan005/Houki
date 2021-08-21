@@ -2,12 +2,11 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package module
+package modules
 
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -15,7 +14,8 @@ import (
 	log "unknwon.dev/clog/v2"
 )
 
-func (m *module) DoRequest(req *http.Request, body []byte) {
+// DoRequest modify the request if the module was invoked.
+func (m *Module) DoRequest(req *http.Request, body []byte) {
 	if !m.isRequestHit(req, body) {
 		return
 	}
@@ -28,7 +28,7 @@ func (m *module) DoRequest(req *http.Request, body []byte) {
 		req.Header.Set(k, v)
 	}
 
-	// Load body from local file
+	// Modify request body with the local file.
 	if filePath, ok := m.Req.Body["file"].(string); ok && filePath != "" {
 		newBody, err := os.ReadFile(filePath)
 		if err != nil {
@@ -37,22 +37,26 @@ func (m *module) DoRequest(req *http.Request, body []byte) {
 		}
 		body = newBody
 	}
-	// Replace body
-	if replacement, ok := m.Req.Body["replace"].(map[string]string); ok {
+
+	if replacement, ok := m.Resp.Body["replace"].(map[interface{}]interface{}); ok { // Replace body's keywords.
 		bodyString := string(body)
 		for k, v := range replacement {
-			bodyString = strings.ReplaceAll(bodyString, k, v)
+			key, keyOk := k.(string)
+			value, valueOk := v.(string)
+			if keyOk && valueOk {
+				bodyString = strings.ReplaceAll(bodyString, key, value)
+			}
 		}
 		body = []byte(bodyString)
-	} else if newBody, ok := m.Req.Body["replace"].(string); ok {
+	} else if newBody, ok := m.Req.Body["replace"].(string); ok { // Replace the whole body.
 		body = []byte(newBody)
 	}
 
-	// Write back
+	// Write back the request body.
 	req.Body = io.NopCloser(bytes.NewBuffer(body))
 }
 
-func (m *module) isRequestHit(req *http.Request, body []byte) bool {
+func (m *Module) isRequestHit(req *http.Request, body []byte) bool {
 	result, _, err := m.Req.OnPrg.Eval(map[string]interface{}{
 		"method":  req.Method,
 		"url":     req.URL.String(),
@@ -65,33 +69,33 @@ func (m *module) isRequestHit(req *http.Request, body []byte) bool {
 	}
 
 	switch v := result.Value().(type) {
-	case bool:
+	case bool: // Condition.
 		return v
-	case string:
+	case string: // Specific URL.
 		return v == req.URL.String()
 	default:
 		return false
 	}
 }
 
-func (m *module) DoResponse(resp *http.Response, body []byte) {
+func (m *Module) DoResponse(resp *http.Response, body []byte) {
 	if !m.isResponseHit(resp, body) {
 		return
 	}
 
-	// Status code
+	// Replace response status code.
 	if m.Resp.StatusCode != 0 {
 		resp.StatusCode = m.Resp.StatusCode
 	}
 
-	// Response header
+	// Replace response header.
 	for k, v := range m.Resp.Header {
 		resp.Header.Set(k, v)
 	}
 
-	// Load body from local file
+	// Modify response body with the local file.
 	if filePath, ok := m.Resp.Body["file"].(string); ok && filePath != "" {
-		newBody, err := ioutil.ReadFile(filePath)
+		newBody, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Error("Failed to load local file: %v", err)
 			return
@@ -99,8 +103,7 @@ func (m *module) DoResponse(resp *http.Response, body []byte) {
 		body = newBody
 	}
 
-	// Replace body
-	if replacement, ok := m.Resp.Body["replace"].(map[interface{}]interface{}); ok {
+	if replacement, ok := m.Resp.Body["replace"].(map[interface{}]interface{}); ok { // Replace body's keywords
 		bodyString := string(body)
 		for k, v := range replacement {
 			key, keyOk := k.(string)
@@ -110,15 +113,15 @@ func (m *module) DoResponse(resp *http.Response, body []byte) {
 			}
 		}
 		body = []byte(bodyString)
-	} else if newContent, ok := m.Resp.Body["replace"].(string); ok {
+	} else if newContent, ok := m.Resp.Body["replace"].(string); ok { // Replace the whole body.
 		body = []byte(newContent)
 	}
 
-	// Write back
+	// Write back the response body.
 	resp.Body = io.NopCloser(bytes.NewBuffer(body))
 }
 
-func (m *module) isResponseHit(resp *http.Response, body []byte) bool {
+func (m *Module) isResponseHit(resp *http.Response, body []byte) bool {
 	result, _, err := m.Resp.OnPrg.Eval(map[string]interface{}{
 		"url":         resp.Request.URL.String(),
 		"status_code": resp.StatusCode,

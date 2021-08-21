@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package module
+package modules
 
 import (
 	"net/url"
@@ -11,10 +11,25 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/wuhan005/Houki/internal/expression"
 )
+
+type Module struct {
+	FileName string `yaml:"-" json:"file_name"`
+
+	Title       string `yaml:"title" json:"title"`
+	Author      string `yaml:"author" json:"author"`
+	Description string `yaml:"description" json:"description"`
+	ID          string `yaml:"id" json:"id"`
+	Sign        string `yaml:"sign" json:"sign"`
+
+	Req  *Request  `yaml:"request" json:"request"`
+	Resp *Response `yaml:"response" json:"response"`
+
+	Env *cel.Env `json:"-"`
+}
 
 type Request struct {
 	On    string      `yaml:"on" json:"on"`
@@ -35,31 +50,24 @@ type Response struct {
 	Body       map[string]interface{} `yaml:"body" json:"-"` //FIXME
 }
 
-type module struct {
-	Env *cel.Env `json:"-"`
-
-	FileName string `yaml:"-" json:"file_name"`
-
-	Title       string `yaml:"title" json:"title"`
-	Author      string `yaml:"author" json:"author"`
-	Description string `yaml:"description" json:"description"`
-	ID          string `yaml:"id" json:"id"`
-	Sign        string `yaml:"sign" json:"sign"`
-
-	Req  *Request  `yaml:"request" json:"request"`
-	Resp *Response `yaml:"response" json:"response"`
-}
-
-func NewModule(filePath string) (*module, error) {
-	mod, err := ParseFile(filePath)
+// NewModule loads a new module with the given module file path.
+func NewModule(filePath string) (*Module, error) {
+	raw, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse module file")
+		return nil, errors.Wrap(err, "read file")
 	}
 
+	var mod Module
+	err = yaml.Unmarshal(raw, &mod)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse module yaml")
+	}
+	mod.FileName = filepath.Base(filePath)
+
+	// If the `on` condition is empty, it means the module always enabled.
 	if mod.Req.On == "" {
 		mod.Req.On = "true"
 	}
-
 	if mod.Resp.On == "" {
 		mod.Resp.On = "true"
 	}
@@ -78,36 +86,21 @@ func NewModule(filePath string) (*module, error) {
 	}
 	mod.Env = env
 
-	// Parse `on` program.
-	mod.Req.OnPrg, err = mod.parse(mod.Req.On)
+	// Parse `on` expression.
+	mod.Req.OnPrg, err = mod.parseExpression(mod.Req.On)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse request `on`")
 	}
-	mod.Resp.OnPrg, err = mod.parse(mod.Resp.On)
+	mod.Resp.OnPrg, err = mod.parseExpression(mod.Resp.On)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse response `on`")
 	}
 
-	return mod, nil
-}
-
-func ParseFile(filePath string) (*module, error) {
-	raw, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, errors.Wrap(err, "read file")
-	}
-
-	var mod module
-	err = yaml.Unmarshal(raw, &mod)
-	if err != nil {
-		return nil, errors.Wrap(err, "parse module yaml")
-	}
-
-	mod.FileName = filepath.Base(filePath)
 	return &mod, nil
 }
 
-func (m *module) parse(expression string) (cel.Program, error) {
+// parseExpression parses the module expression in itself environment.
+func (m *Module) parseExpression(expression string) (cel.Program, error) {
 	ast, issues := m.Env.Compile(expression)
 	if issues != nil && issues.Err() != nil {
 		return nil, errors.Wrap(issues.Err(), "type check")
@@ -116,5 +109,5 @@ func (m *module) parse(expression string) (cel.Program, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "program construction")
 	}
-	return prg, err
+	return prg, nil
 }

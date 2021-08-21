@@ -12,7 +12,7 @@ import (
 	"github.com/elazarl/goproxy"
 	log "unknwon.dev/clog/v2"
 
-	"github.com/wuhan005/Houki/internal/module"
+	"github.com/wuhan005/Houki/internal/modules"
 )
 
 // registerDispatcher registers the MitM server's dispatcher, which used to modify the request and response message.
@@ -27,7 +27,7 @@ func (p *Proxy) registerDispatcher() {
 		// Set the body back to the request.
 		req.Body = io.NopCloser(bytes.NewReader(body))
 
-		module.DoRequest(req, body)
+		modules.DoRequest(req, body)
 
 		return req, nil
 	})
@@ -44,7 +44,7 @@ func (p *Proxy) registerDispatcher() {
 		// Set the body back to the response.
 		ctx.Resp.Body = io.NopCloser(bytes.NewReader(body))
 
-		module.DoResponse(ctx.Resp, body)
+		modules.DoResponse(ctx.Resp, body)
 
 		return ctx.Resp
 	})
