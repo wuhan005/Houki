@@ -5,18 +5,32 @@
 package db
 
 import (
-	"github.com/dgraph-io/badger/v3"
+	"database/sql"
+
 	"github.com/pkg/errors"
+	"upper.io/db.v3/lib/sqlbuilder"
+	"upper.io/db.v3/sqlite"
+
+	"github.com/wuhan005/Houki/assets/migrations"
+	"github.com/wuhan005/Houki/internal/dbutil"
 )
 
-var Modules modules
+var Modules ModulesStore
 
-func Initialize() error {
-	db, err := badger.Open(badger.DefaultOptions("./data"))
+func New() (sqlbuilder.Database, error) {
+	db, err := sqlite.Open(sqlite.ConnectionURL{
+		Database: "",
+	})
 	if err != nil {
-		return errors.Wrap(err, "open database")
+		return nil, errors.Wrap(err, "open database")
 	}
 
-	Modules = modules{db}
-	return nil
+	_, err = dbutil.Migrate(db.Driver().(*sql.DB), migrations.Migrations)
+	if err != nil {
+		return nil, errors.Wrap(err, "migrate")
+	}
+
+	Modules = NewModulesStore(db)
+
+	return db, nil
 }

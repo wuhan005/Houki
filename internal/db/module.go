@@ -5,50 +5,117 @@
 package db
 
 import (
-	"bytes"
+	"context"
+	"time"
 
-	"github.com/dgraph-io/badger/v3"
+	"github.com/pkg/errors"
+	dbv3 "upper.io/db.v3"
+	"upper.io/db.v3/lib/sqlbuilder"
+
+	"github.com/wuhan005/Houki/internal/dbutil"
 )
 
-var (
-	ModulePrefix = "mod$"
-)
+var _ ModulesStore = (*modules)(nil)
+
+type ModulesStore interface {
+	List(ctx context.Context, opts GetModuleOptions) ([]*Module, error)
+	Get(ctx context.Context, id string) (*Module, error)
+	Create(ctx context.Context, opts CreateModuleOptions) error
+	Update(ctx context.Context, id string, opts UpdateModuleOptions) error
+	Delete(ctx context.Context, id string) error
+}
+
+func NewModulesStore(db sqlbuilder.Database) ModulesStore {
+	return &modules{db}
+}
+
+// Module represents a single module.
+type Module struct {
+	ID        string    `db:"id"`
+	FilePath  string    `db:"file_path"`
+	Enabled   bool      `db:"enabled"`
+	CreatedAt time.Time `db:"created_at"`
+}
+
+func (m *Module) IsEnabled() bool {
+	return m.Enabled
+}
 
 type modules struct {
-	*badger.DB
+	sqlbuilder.Database
 }
 
-func (db *modules) GetEnabled() ([]string, error) {
-	moduleLists := make([]string, 0)
-	err := db.View(func(txn *badger.Txn) error {
-		it := txn.NewIterator(badger.DefaultIteratorOptions)
-		defer it.Close()
-		prefix := []byte(ModulePrefix)
-		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-			moduleID := append([]byte{}, it.Item().Key()...)
-			moduleLists = append(moduleLists, string(bytes.TrimPrefix(moduleID, []byte(ModulePrefix))))
+type GetModuleOptions struct {
+	EnabledOnly bool
+}
+
+func (db *modules) List(ctx context.Context, opts GetModuleOptions) ([]*Module, error) {
+	var modules []*Module
+	q := db.WithContext(ctx).SelectFrom("modules")
+	if opts.EnabledOnly {
+		q.Where("enabled = TRUE")
+	}
+	return modules, q.All(&modules)
+}
+
+var ErrModuleNotFound = errors.New("module does not found")
+
+func (db *modules) Get(ctx context.Context, id string) (*Module, error) {
+	var module Module
+	err := db.WithContext(ctx).SelectFrom("modules").Where("id = ?", id).One(&module)
+	if err != nil {
+		if err == dbv3.ErrNoMoreRows {
+			return nil, ErrModuleNotFound
 		}
-		return nil
-	})
-
-	return moduleLists, err
+		return nil, err
+	}
+	return &module, nil
 }
 
-func (db *modules) IsEnabled(id string) bool {
-	return db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get([]byte(ModulePrefix + id))
+type CreateModuleOptions struct {
+	ID       string
+	FilePath string
+}
+
+var ErrModuleExists = errors.New("module has already been created")
+
+func (db *modules) Create(ctx context.Context, opts CreateModuleOptions) error {
+	_, err := db.WithContext(ctx).InsertInto("modules").
+		Columns("id", "file_path").
+		Values(opts.ID, opts.FilePath).
+		Exec()
+	if dbutil.IsUniqueViolation(err, "idx_module_id") {
+		return ErrModuleExists
+	}
+	return err
+}
+
+type UpdateModuleOptions struct {
+	FilePath string
+	Enabled  bool
+}
+
+func (db *modules) Update(ctx context.Context, id string, opts UpdateModuleOptions) error {
+	_, err := db.Get(ctx, id)
+	if err != nil {
 		return err
-	}) == nil
+	}
+
+	_, err = db.WithContext(ctx).
+		Update("modules").
+		Set(
+			"file_path", opts.FilePath,
+			"enabled", opts.Enabled,
+		).Where("id = ?", id).Exec()
+	return err
 }
 
-func (db *modules) Enable(id string) error {
-	return db.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(ModulePrefix+id), []byte{})
-	})
-}
+func (db *modules) Delete(ctx context.Context, id string) error {
+	_, err := db.Get(ctx, id)
+	if err != nil {
+		return err
+	}
 
-func (db *modules) Disable(id string) error {
-	return db.Update(func(txn *badger.Txn) error {
-		return txn.Delete([]byte(ModulePrefix + id))
-	})
+	_, err = db.WithContext(ctx).DeleteFrom("modules").Where("id = ?", id).Exec()
+	return err
 }
