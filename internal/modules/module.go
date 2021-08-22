@@ -24,6 +24,7 @@ type Module struct {
 	Description string `yaml:"description" json:"description"`
 	ID          string `yaml:"id" json:"id"`
 	Sign        string `yaml:"sign" json:"sign"`
+	Enabled     bool   `yaml:"-" json:"enabled"`
 
 	Req  *Request  `yaml:"request" json:"request"`
 	Resp *Response `yaml:"response" json:"response"`
@@ -51,7 +52,7 @@ type Response struct {
 }
 
 // NewModule loads a new module with the given module file path.
-func NewModule(filePath string) (*Module, error) {
+func NewModule(filePath string, enabled bool) (*Module, error) {
 	raw, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "read file")
@@ -63,6 +64,7 @@ func NewModule(filePath string) (*Module, error) {
 		return nil, errors.Wrap(err, "parse module yaml")
 	}
 	mod.FileName = filepath.Base(filePath)
+	mod.Enabled = enabled
 
 	// If the `on` condition is empty, it means the module always enabled.
 	if mod.Req.On == "" {

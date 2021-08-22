@@ -1,0 +1,39 @@
+{{ template "base/header" . }}
+
+<div class="hero">
+  <div class="flex-col justify-center hero-content lg:flex-row">
+    <div class="text-center lg:text-left">
+      <h1 class="mb-5 text-5xl font-bold">
+        Hello there
+      </h1>
+      <p class="mb-5">
+
+      </p>
+    </div>
+    <div class="card flex-shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
+      <div class="card-body">
+        {{ if .Enabled }}
+        <form action="/proxy/shut_down" method="post">
+          {{ else }}
+          <form action="/proxy/start" method="post">
+            {{ end }}
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Address</span>
+              </label>
+              <input type="text" name="Address" class="input input-bordered">
+            </div>
+            <div class="form-control mt-6">
+              {{ if .Enabled }}
+              <input type="submit" value="Stop proxy" class="btn btn-primary">
+              {{ else }}
+              <input type="submit" value="Start proxy" class="btn btn-primary">
+              {{ end }}
+            </div>
+          </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ template "base/footer" . }}

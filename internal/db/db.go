@@ -19,7 +19,7 @@ var Modules ModulesStore
 
 func New() (sqlbuilder.Database, error) {
 	db, err := sqlite.Open(sqlite.ConnectionURL{
-		Database: "",
+		Database: "houki.db",
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "open database")

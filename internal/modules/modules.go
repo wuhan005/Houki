@@ -14,37 +14,59 @@ import (
 	"github.com/wuhan005/Houki/internal/db"
 )
 
-var enabledModules map[string]*Module
+type ModuleList map[string]*Module
 
-// Reload loads the enabled modules.
+func (modules ModuleList) Get(id string) (*Module, error) {
+	module, ok := modules[id]
+	if ok {
+		return module, nil
+	}
+	return nil, errors.New("module not found")
+}
+
+var modulesMap = make(ModuleList)
+
+// Reload loads all the modules.
 func Reload(ctx context.Context) (map[string]*Module, error) {
 	modules, err := db.Modules.List(ctx, db.GetModuleOptions{EnabledOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "load from database")
 	}
 
-	enabledModules = make(map[string]*Module)
+	modulesMap = make(map[string]*Module)
 
 	for _, mod := range modules {
-		module, err := NewModule(mod.FilePath)
+		module, err := NewModule(mod.FilePath, mod.Enabled)
 		if err != nil {
 			log.Error("Failed to load module %q: %v", mod.ID, err)
 			continue
 		}
 
-		enabledModules[mod.ID] = module
+		modulesMap[mod.ID] = module
 	}
-	return enabledModules, nil
+	return modulesMap, nil
+}
+
+func List() ModuleList {
+	return modulesMap
+}
+
+func Get(id string) (*Module, error) {
+	return modulesMap.Get(id)
 }
 
 func DoRequest(req *http.Request, body []byte) {
-	for _, module := range enabledModules {
-		module.DoRequest(req, body)
+	for _, module := range modulesMap {
+		if module.Enabled {
+			module.DoRequest(req, body)
+		}
 	}
 }
 
 func DoResponse(resp *http.Response, body []byte) {
-	for _, module := range enabledModules {
-		module.DoResponse(resp, body)
+	for _, module := range modulesMap {
+		if module.Enabled {
+			module.DoResponse(resp, body)
+		}
 	}
 }

@@ -33,7 +33,7 @@ func init() {
 func createFolder() error {
 	_, err := os.Stat(".certificate")
 	if os.IsNotExist(err) {
-		err := os.Mkdir(".certificate", 0644)
+		err := os.Mkdir(".certificate", 0755)
 		if err != nil {
 			return errors.Wrap(err, "create .certificate folder")
 		}
@@ -92,7 +92,9 @@ func GenerateCertificate(save bool) ([]byte, []byte, error) {
 
 	if save {
 		err := saveToFile(rootCrtBytes, rootKeyBytes)
-		log.Error("Failed to save CA to file: %v", err)
+		if err != nil {
+			log.Error("Failed to save CA to file: %v", err)
+		}
 	}
 
 	return rootCrtBytes, rootKeyBytes, nil

@@ -5,22 +5,20 @@
 package cmd
 
 import (
-	"fmt"
-	"io/fs"
-	"net/http"
-
-	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
-	"github.com/thanhpk/randstr"
+	"github.com/flamego/binding"
+	"github.com/flamego/flamego"
+	"github.com/flamego/session"
+	"github.com/flamego/template"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	log "unknwon.dev/clog/v2"
 
-	"github.com/wuhan005/Houki/frontend"
-	"github.com/wuhan005/Houki/internal/route/module"
-	"github.com/wuhan005/Houki/internal/route/proxy"
-	"github.com/wuhan005/Houki/internal/sse"
+	"github.com/wuhan005/Houki/internal/context"
+	"github.com/wuhan005/Houki/internal/db"
+	"github.com/wuhan005/Houki/internal/form"
+	"github.com/wuhan005/Houki/internal/proxy"
+	"github.com/wuhan005/Houki/internal/route"
+	"github.com/wuhan005/Houki/templates"
 )
 
 var Web = &cli.Command{
@@ -34,49 +32,86 @@ var Web = &cli.Command{
 }
 
 func runWeb(c *cli.Context) error {
-	r := gin.Default()
-	// TODO remove CORS headers
-	r.Use(cors.New(cors.Config{
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"},
-		AllowHeaders:     []string{"Content-type", "User-Agent"},
-		AllowCredentials: true,
-		AllowOrigins:     []string{"http://localhost:8080"},
-	}))
-
-	store := cookie.NewStore([]byte(randstr.String(50)))
-	r.Use(sessions.Sessions("Houki", store))
-
-	sse.Initialize()
-	api := r.Group("/api")
-	api.GET("/logs", proxy.LogHandler)
-
-	// Proxy
-	pxy := api.Group("/proxy")
-	pxy.GET("/status", __(proxy.GetStatus))
-	pxy.POST("/start", __(proxy.Start))
-	pxy.POST("/stop", __(proxy.Stop))
-	// Proxy CA
-	pxy.GET("/ca", __(proxy.FetchCA))
-	pxy.POST("/ca/generate", __(proxy.GenerateCA))
-
-	// Modules
-	api.GET("/modules", __(module.ListModules))
-	api.POST("/module/enable/:id", __(module.EnableModule))
-	api.POST("/module/disable/:id", __(module.DisableModule))
-
-	// Frontend static assets
-	fe, err := fs.Sub(frontend.FS, "dist")
+	_, err := proxy.SetDefaultProxy()
 	if err != nil {
-		log.Fatal("Failed to sub path `dist`: %v", err)
+		return errors.Wrap(err, "set default proxy")
 	}
-	r.StaticFS("/m", http.FS(fe))
 
-	httpPort := c.String("port")
-	return r.Run(fmt.Sprintf("%s:%s", "0.0.0.0", httpPort))
-}
-
-func __(handler func(*gin.Context) (int, interface{})) func(*gin.Context) {
-	return func(c *gin.Context) {
-		c.JSON(handler(c))
+	_, err = db.New()
+	if err != nil {
+		return errors.Wrap(err, "new db")
 	}
+
+	f := flamego.Classic()
+	f.Use(context.Contexter())
+
+	fs, err := template.EmbedFS(templates.FS, ".", []string{".tmpl"})
+	if err != nil {
+		log.Fatal("Failed to embed template file system: %v", err)
+	}
+	f.Use(template.Templater(template.Options{
+		FileSystem: fs,
+	}))
+	f.Use(session.Sessioner())
+
+	f.Get("/", func(ctx context.Context) {
+		ctx.Redirect("/proxy/")
+	})
+
+	proxy := route.NewProxyHandler()
+	f.Group("/proxy", func() {
+		f.Get("/", proxy.Dashboard)
+		f.Post("/start", binding.Form(form.StartProxy{}), proxy.Start)
+		f.Post("/shut_down", proxy.ShutDown)
+	})
+
+	modules := route.NewModulesHandler()
+	f.Group("/modules", func() {
+		f.Get("/", modules.List)
+		f.Post("/", modules.New)
+		f.Get("/{id}", modules.Get)
+		f.Post("/{id}/enable", modules.SetStatus(route.Enable))
+		f.Post("/{id}/disable", modules.SetStatus(route.Disable))
+		f.Put("/{id}")
+		f.Delete("/{id}")
+	})
+
+	//r := gin.Default()
+	//// TODO remove CORS headers
+	//r.Use(cors.New(cors.Config{
+	//	AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"},
+	//	AllowHeaders:     []string{"Content-type", "User-Agent"},
+	//	AllowCredentials: true,
+	//	AllowOrigins:     []string{"http://localhost:8080"},
+	//}))
+	//
+	//store := cookie.NewStore([]byte(randstr.String(50)))
+	//r.Use(sessions.Sessions("Houki", store))
+	//
+	//api := r.Group("/api")
+	//
+	//// Proxy
+	//pxy := api.Group("/proxy")
+	//pxy.GET("/status", __(proxy.GetStatus))
+	//pxy.POST("/start", __(proxy.Start))
+	//pxy.POST("/stop", __(proxy.Stop))
+	//// Proxy CA
+	//pxy.GET("/ca", __(proxy.FetchCA))
+	//pxy.POST("/ca/generate", __(proxy.GenerateCA))
+	//
+	//// Modules
+	//api.GET("/modules", __(module.ListModules))
+	//api.POST("/module/enable/:id", __(module.EnableModule))
+	//api.POST("/module/disable/:id", __(module.DisableModule))
+	//
+	//// Frontend static assets
+	//fe, err := fs.Sub(frontend.FS, "dist")
+	//if err != nil {
+	//	log.Fatal("Failed to sub path `dist`: %v", err)
+	//}
+	//r.StaticFS("/m", http.FS(fe))
+	//
+	httpPort := c.Int("port")
+	f.Run("0.0.0.0", httpPort)
+	return nil
 }

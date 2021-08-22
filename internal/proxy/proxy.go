@@ -44,8 +44,8 @@ func SetDefaultProxy() (*Proxy, error) {
 	return p, nil
 }
 
-// Enabled returns the proxy status.
-func Enabled() bool {
+// IsEnabled returns the proxy status.
+func IsEnabled() bool {
 	return defaultProxy.enable
 }
 
