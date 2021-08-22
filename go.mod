@@ -3,18 +3,23 @@ module github.com/wuhan005/Houki
 go 1.16
 
 require (
-	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
-	github.com/gin-contrib/cors v1.3.1
-	github.com/gin-contrib/sessions v0.0.3
-	github.com/gin-gonic/gin v1.6.3
+	github.com/flamego/binding v0.0.0-20210821162210-4f53bad2a3a6
+	github.com/flamego/flamego v0.0.0-20210821060740-3c58a415258e
+	github.com/flamego/session v0.0.0-20210607182212-8d30fdff82f2
+	github.com/flamego/template v0.0.0-20210515150544-049eb6703243
+	github.com/flamego/validator v0.0.0-20210821065223-7cb80dd2ce7a
+	github.com/go-playground/locales v0.14.0
+	github.com/go-playground/universal-translator v0.18.0
+	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/google/cel-go v0.7.2
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/json-iterator/go v1.1.9
+	github.com/lib/pq v1.8.0
+	github.com/mattn/go-sqlite3 v1.14.8 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/thanhpk/randstr v1.0.4
 	github.com/urfave/cli/v2 v2.3.0
-	github.com/wuhan005/gadget v0.0.0-20210219172749-cc0c7fff3dab
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	unknwon.dev/clog/v2 v2.2.0
+	upper.io/db.v3 v3.8.0+incompatible
 )
