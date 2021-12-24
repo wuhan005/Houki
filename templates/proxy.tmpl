@@ -3,14 +3,14 @@
 <div class="flex-col justify-center lg:flex-row">
   <div class="card flex-shrink-0 w-full shadow-xl bg-base-100">
     <div class="card-body">
-      <div>
+      <div x-data="{address: 'localhost:8899'}">
         <label class="label"><span class="label-text">Proxy Address</span></label>
-        <input type="text" name="Address" class="input input-sm input-bordered" value="localhost:8080">
+        <input type="text" name="Address" class="input input-sm input-bordered" x-bind:value="address">
         {{ if .Enabled }}
         <button x-data @click="stopProxy" class="btn btn-secondary btn-sm">Stop proxy</button>
-        <button x-data @click="startBrowser" class="btn btn-ghost btn-sm">Start Browser</button>
+        <button x-data @click="openBrowser" class="btn btn-ghost btn-sm">Open Browser</button>
         {{ else }}
-        <button x-data @click="startProxy" class="btn btn-primary btn-sm">Start proxy</button>
+        <button @click="startProxy(address)" class="btn btn-primary btn-sm">Start proxy</button>
         {{ end }}
       </div>
     </div>

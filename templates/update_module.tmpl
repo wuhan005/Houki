@@ -1,0 +1,54 @@
+{{ template "base/header" . }}
+
+<link rel="stylesheet" data-name="vs/editor/editor.main"
+      href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs/editor/editor.main.min.css">
+<script>var require = {paths: {'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs'}}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs/loader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs/editor/editor.main.nls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs/editor/editor.main.js"></script>
+
+<div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+  <div>
+    <div class="shadow sm:rounded-md sm:overflow-hidden">
+      <div class="px-4 py-5 bg-white space-y-6 sm:p-6">
+        <div class="grid grid-cols-3 gap-6">
+          <div class="col-span-3 sm:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Module ID</label>
+            <div class="mt-1 flex rounded-md shadow-sm">
+              <input type="text"
+                     class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm border-gray-300 rounded-md"
+                     disabled value="{{ .Module.ID }}">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Configuration</label>
+          <div class="mt-1">
+            <div id="module-body" style="height:400px;border:1px solid black;"></div>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            The configuration is a JSON object, which defined the rules to handle the requests and responses.
+          </p>
+        </div>
+      </div>
+      <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
+        <button x-data @click="updateModule('{{ .Module.ID }}')"
+                type="submit"
+                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Update module
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    let editor = monaco.editor.create(document.getElementById('module-body'), {
+        value: {{ .ModuleBody }},
+        language: 'json',
+        theme: 'vs-dark',
+    });
+</script>
+
+{{ template "base/footer" . }}

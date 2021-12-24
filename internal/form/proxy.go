@@ -5,5 +5,5 @@
 package form
 
 type StartProxy struct {
-	Address string `validate:"required"`
+	Address string
 }

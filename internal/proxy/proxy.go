@@ -19,6 +19,7 @@ import (
 )
 
 var defaultProxy *Proxy
+var proxyAddress string
 
 // Proxy is the MitM server which supports start and shutdown.
 type Proxy struct {
@@ -55,7 +56,12 @@ func Start(addr string) error {
 	if defaultProxy.enable {
 		return nil
 	}
+	proxyAddress = addr
 	return defaultProxy.run(addr)
+}
+
+func Address() string {
+	return proxyAddress
 }
 
 var ErrProxyHasBennStarted = errors.New("Proxy server has been started.")

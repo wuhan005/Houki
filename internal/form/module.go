@@ -12,3 +12,7 @@ type NewModule struct {
 	ID   string
 	Body json.RawMessage
 }
+
+type UpdateModule struct {
+	Body json.RawMessage
+}

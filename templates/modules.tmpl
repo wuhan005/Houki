@@ -40,6 +40,11 @@
           <div class="text-sm text-gray-900">{{ .CreatedAt }}</div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {{ if eq .Enabled true }}
+          <button x-data @click="disableModule('{{ .ID }}')" class="btn btn-sm btn-warning">Disable</button>
+          {{ else }}
+          <button x-data @click="enableModule('{{ .ID }}')" class="btn btn-sm btn-success">Enable</button>
+          {{ end }}
           <a class="btn btn-sm btn-primary" href="/modules/{{ .ID }}">Edit</a>
           <button x-data @click="deleteModule('{{ .ID }}')" class="btn btn-sm btn-error">Delete</button>
         </td>

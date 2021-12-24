@@ -9,6 +9,8 @@ import (
 
 	"github.com/chromedp/chromedp"
 	log "unknwon.dev/clog/v2"
+
+	"github.com/wuhan005/Houki/internal/proxy"
 )
 
 type ChromeDpHandler struct{}
@@ -18,10 +20,11 @@ func NewChromeDpHandler() *ChromeDpHandler {
 }
 
 func (*ChromeDpHandler) New() {
+	log.Trace(proxy.Address())
 	opts := []chromedp.ExecAllocatorOption{
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
-		chromedp.ProxyServer("localhost:8080"),
+		chromedp.ProxyServer(proxy.Address()),
 		chromedp.Flag("ignore-certificate-errors", "1"),
 		func(a *chromedp.ExecAllocator) {
 			chromedp.Flag("headless", false)(a)

@@ -27,6 +27,11 @@ func (*ProxyHandler) Dashboard(ctx context.Context, t template.Template, data te
 }
 
 func (*ProxyHandler) Start(ctx context.Context, f form.StartProxy) {
+	if f.Address == "" {
+		ctx.Error(40000, "Proxy address is required")
+		return
+	}
+
 	if err := proxy.Start(f.Address); err != nil {
 		log.Error("Failed to start proxy: %v", err)
 		return

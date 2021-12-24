@@ -23,6 +23,7 @@ type ModulesStore interface {
 	Get(ctx context.Context, id string) (*Module, error)
 	Create(ctx context.Context, opts CreateModuleOptions) error
 	Update(ctx context.Context, id string, opts UpdateModuleOptions) error
+	SetStatus(ctx context.Context, id string, enabled bool) error
 	Delete(ctx context.Context, id string) error
 }
 
@@ -92,8 +93,7 @@ func (db *modules) Create(ctx context.Context, opts CreateModuleOptions) error {
 }
 
 type UpdateModuleOptions struct {
-	Body    *module.Body
-	Enabled bool
+	Body *module.Body
 }
 
 func (db *modules) Update(ctx context.Context, id string, opts UpdateModuleOptions) error {
@@ -104,10 +104,21 @@ func (db *modules) Update(ctx context.Context, id string, opts UpdateModuleOptio
 
 	_, err = db.WithContext(ctx).
 		Update("modules").
-		Set(
-			"body", opts.Body,
-			"enabled", opts.Enabled,
-		).Where("id = ?", id).Exec()
+		Set("body", opts.Body).
+		Where("id = ?", id).Exec()
+	return err
+}
+
+func (db *modules) SetStatus(ctx context.Context, id string, enabled bool) error {
+	_, err := db.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.WithContext(ctx).
+		Update("modules").
+		Set("enabled", enabled).
+		Where("id = ?", id).Exec()
 	return err
 }
 

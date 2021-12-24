@@ -78,8 +78,8 @@ func runWeb(c *cli.Context) error {
 		f.Combo("/new").Get(modules.New).Post(binding.JSON(form.NewModule{}), modules.NewAction)
 		f.Post("/{id}/enable", modules.SetStatus(route.Enable))
 		f.Post("/{id}/disable", modules.SetStatus(route.Disable))
-		f.Get("/{id}")
-		f.Put("/{id}")
+		f.Get("/{id}", modules.Get)
+		f.Put("/{id}", binding.JSON(form.UpdateModule{}), modules.Update)
 		f.Delete("/{id}", modules.Delete)
 	})
 
