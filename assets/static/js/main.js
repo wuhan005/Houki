@@ -52,6 +52,20 @@ async function newModule() {
     })
 }
 
+async function reloadModule() {
+    await fetch('/modules/reload', {
+        method: 'POST',
+    }).then(async res => {
+        if (res.status === 200) {
+            window.location.href = '/modules/'
+            return
+        }
+        alert((await res.json()).msg)
+    }).catch(err => {
+        console.log(err)
+    })
+}
+
 function updateModule(id) {
     let body = {}
     try {

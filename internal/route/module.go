@@ -40,6 +40,15 @@ func (*ModulesHandler) List(ctx context.Context, t template.Template, data templ
 	t.HTML(http.StatusOK, "modules")
 }
 
+func (*ModulesHandler) RefreshModule(ctx context.Context) {
+	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
+		log.Error("Failed to reload modules: %v", err)
+		ctx.ServerError()
+		return
+	}
+	ctx.Success("success")
+}
+
 const (
 	Enable  = "enable"
 	Disable = "disable"
