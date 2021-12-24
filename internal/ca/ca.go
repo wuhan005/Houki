@@ -52,6 +52,29 @@ func Get() ([]byte, []byte, error) {
 	return GenerateCertificate(true)
 }
 
+//func GetPin() ([]byte, error) {
+//	certBytes, _, err := Get()
+//	if err != nil {
+//		return nil, errors.Wrap(err, "get certificate")
+//	}
+//
+//	cert, err := x509.ParseCertificate(certBytes)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "x509.ParseCertificate")
+//	}
+//	cert.PublicKey.(*ecdsa.PublicKey)
+//
+//	publicDer, err := x509.MarshalPKCS1PublicKey()
+//	if err != nil {
+//		return nil, errors.Wrap(err, "x509.MarshalPKIXPublicKey")
+//	}
+//	sum := sha256.Sum256(publicDer)
+//	pin := make([]byte, base64.StdEncoding.EncodedLen(len(sum)))
+//	base64.StdEncoding.Encode(pin, sum[:])
+//
+//	return pin, nil
+//}
+
 func GenerateCertificate(save bool) ([]byte, []byte, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)

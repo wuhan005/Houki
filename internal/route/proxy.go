@@ -12,7 +12,6 @@ import (
 
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/form"
-	"github.com/wuhan005/Houki/internal/modules"
 	"github.com/wuhan005/Houki/internal/proxy"
 )
 
@@ -35,7 +34,7 @@ func (*ProxyHandler) Start(ctx context.Context, f form.StartProxy) {
 		return
 	}
 
-	if _, err := modules.Reload(ctx.Request().Context()); err != nil {
+	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
 		log.Error("Failed to reload modules: %v", err)
 		return
 	}

@@ -1,6 +1,6 @@
 CREATE TABLE modules (
     id         TEXT      NOT NULL PRIMARY KEY,
-    file_path  TEXT      NOT NULL,
+    body       TEXT      NOT NULL,
     enabled    BOOLEAN   NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

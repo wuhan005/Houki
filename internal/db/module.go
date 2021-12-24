@@ -13,6 +13,7 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/wuhan005/Houki/internal/dbutil"
+	"github.com/wuhan005/Houki/internal/module"
 )
 
 var _ ModulesStore = (*modules)(nil)
@@ -31,10 +32,10 @@ func NewModulesStore(db sqlbuilder.Database) ModulesStore {
 
 // Module represents a single module.
 type Module struct {
-	ID        string    `db:"id"`
-	FilePath  string    `db:"file_path"`
-	Enabled   bool      `db:"enabled"`
-	CreatedAt time.Time `db:"created_at"`
+	ID        string       `db:"id"`
+	Body      *module.Body `db:"body"`
+	Enabled   bool         `db:"enabled"`
+	CreatedAt time.Time    `db:"created_at"`
 }
 
 func (m *Module) IsEnabled() bool {
@@ -73,16 +74,16 @@ func (db *modules) Get(ctx context.Context, id string) (*Module, error) {
 }
 
 type CreateModuleOptions struct {
-	ID       string
-	FilePath string
+	ID   string
+	Body *module.Body
 }
 
 var ErrModuleExists = errors.New("module has already been created")
 
 func (db *modules) Create(ctx context.Context, opts CreateModuleOptions) error {
 	_, err := db.WithContext(ctx).InsertInto("modules").
-		Columns("id", "file_path").
-		Values(opts.ID, opts.FilePath).
+		Columns("id", "body").
+		Values(opts.ID, opts.Body).
 		Exec()
 	if dbutil.IsUniqueViolation(err, "idx_module_id") {
 		return ErrModuleExists
@@ -91,8 +92,8 @@ func (db *modules) Create(ctx context.Context, opts CreateModuleOptions) error {
 }
 
 type UpdateModuleOptions struct {
-	FilePath string
-	Enabled  bool
+	Body    *module.Body
+	Enabled bool
 }
 
 func (db *modules) Update(ctx context.Context, id string, opts UpdateModuleOptions) error {
@@ -104,7 +105,7 @@ func (db *modules) Update(ctx context.Context, id string, opts UpdateModuleOptio
 	_, err = db.WithContext(ctx).
 		Update("modules").
 		Set(
-			"file_path", opts.FilePath,
+			"body", opts.Body,
 			"enabled", opts.Enabled,
 		).Where("id = ?", id).Exec()
 	return err

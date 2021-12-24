@@ -9,10 +9,11 @@ import (
 
 	"github.com/flamego/flamego"
 	"github.com/flamego/template"
+	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/internal/context"
+	"github.com/wuhan005/Houki/internal/db"
 	"github.com/wuhan005/Houki/internal/form"
-	"github.com/wuhan005/Houki/internal/modules"
 )
 
 type ModulesHandler struct{}
@@ -22,20 +23,14 @@ func NewModulesHandler() *ModulesHandler {
 }
 
 func (*ModulesHandler) List(ctx context.Context, t template.Template, data template.Data) {
-	modules := modules.List()
+	modules, err := db.Modules.List(ctx.Request().Context(), db.GetModuleOptions{})
+	if err != nil {
+		log.Error("Failed to list modules: %v", err)
+		ctx.ServerError()
+		return
+	}
 	data["modules"] = modules
 	t.HTML(http.StatusOK, "modules")
-}
-
-func (*ModulesHandler) Get(ctx context.Context) error {
-	//moduleID := ctx.Params("id")
-	//module, err := modules.Get(moduleID)
-	//if err != nil {
-	//	return ctx.Error(40400, "Module not found.")
-	//}
-	//
-	//return ctx.Success(module)
-	return nil
 }
 
 const (
@@ -64,7 +59,11 @@ func (*ModulesHandler) SetStatus(status string) flamego.Handler {
 	}
 }
 
-func (*ModulesHandler) New(ctx context.Context, f form.NewModule) {
+func (*ModulesHandler) New(ctx context.Context, t template.Template, data template.Data) {
+	t.HTML(http.StatusOK, "new_module")
+}
+
+func (*ModulesHandler) NewAction(ctx context.Context, f form.NewModule) {
 	//err := db.Modules.Create(ctx.Request().Context(), db.CreateModuleOptions{
 	//	ID:       f.ID,
 	//	FilePath: f.FilePath,

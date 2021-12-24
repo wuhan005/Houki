@@ -68,12 +68,16 @@ func runWeb(c *cli.Context) error {
 	modules := route.NewModulesHandler()
 	f.Group("/modules", func() {
 		f.Get("/", modules.List)
-		f.Post("/", modules.New)
-		f.Get("/{id}", modules.Get)
+		f.Combo("/new").Get(modules.New).Post(modules.NewAction)
 		f.Post("/{id}/enable", modules.SetStatus(route.Enable))
 		f.Post("/{id}/disable", modules.SetStatus(route.Disable))
 		f.Put("/{id}")
 		f.Delete("/{id}")
+	})
+
+	chromeDp := route.NewChromeDpHandler()
+	f.Group("/chromedp", func() {
+		f.Post("/", chromeDp.New)
 	})
 
 	//r := gin.Default()

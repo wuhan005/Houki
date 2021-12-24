@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package modules
+package module
 
 import (
 	"bytes"
@@ -15,21 +15,21 @@ import (
 )
 
 // DoRequest modify the request if the module was invoked.
-func (m *Module) DoRequest(req *http.Request, body []byte) {
-	if !m.isRequestHit(req, body) {
+func (b *Body) DoRequest(req *http.Request, body []byte) {
+	if !b.isRequestHit(req, body) {
 		return
 	}
 
-	if m.Req.TransmitURL != nil {
-		req.URL = m.Req.TransmitURL
+	if b.Req.TransmitURL != nil {
+		req.URL = b.Req.TransmitURL
 	}
 
-	for k, v := range m.Req.Header {
+	for k, v := range b.Req.Header {
 		req.Header.Set(k, v)
 	}
 
 	// Modify request body with the local file.
-	if filePath, ok := m.Req.Body["file"].(string); ok && filePath != "" {
+	if filePath, ok := b.Req.Body["file"].(string); ok && filePath != "" {
 		newBody, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Error("Failed to load body file: %v", err)
@@ -38,17 +38,16 @@ func (m *Module) DoRequest(req *http.Request, body []byte) {
 		body = newBody
 	}
 
-	if replacement, ok := m.Resp.Body["replace"].(map[interface{}]interface{}); ok { // Replace body's keywords.
+	if replacement, ok := b.Resp.Body["replace"].(map[string]interface{}); ok { // Replace body's keywords.
 		bodyString := string(body)
 		for k, v := range replacement {
-			key, keyOk := k.(string)
 			value, valueOk := v.(string)
-			if keyOk && valueOk {
-				bodyString = strings.ReplaceAll(bodyString, key, value)
+			if valueOk {
+				bodyString = strings.ReplaceAll(bodyString, k, value)
 			}
 		}
 		body = []byte(bodyString)
-	} else if newBody, ok := m.Req.Body["replace"].(string); ok { // Replace the whole body.
+	} else if newBody, ok := b.Req.Body["replace"].(string); ok { // Replace the whole body.
 		body = []byte(newBody)
 	}
 
@@ -56,8 +55,8 @@ func (m *Module) DoRequest(req *http.Request, body []byte) {
 	req.Body = io.NopCloser(bytes.NewBuffer(body))
 }
 
-func (m *Module) isRequestHit(req *http.Request, body []byte) bool {
-	result, _, err := m.Req.OnPrg.Eval(map[string]interface{}{
+func (b *Body) isRequestHit(req *http.Request, body []byte) bool {
+	result, _, err := b.Req.OnPrg.Eval(map[string]interface{}{
 		"method":  req.Method,
 		"url":     req.URL.String(),
 		"headers": req.Header,
@@ -78,23 +77,23 @@ func (m *Module) isRequestHit(req *http.Request, body []byte) bool {
 	}
 }
 
-func (m *Module) DoResponse(resp *http.Response, body []byte) {
-	if !m.isResponseHit(resp, body) {
+func (b *Body) DoResponse(resp *http.Response, body []byte) {
+	if !b.isResponseHit(resp, body) {
 		return
 	}
 
 	// Replace response status code.
-	if m.Resp.StatusCode != 0 {
-		resp.StatusCode = m.Resp.StatusCode
+	if b.Resp.StatusCode != 0 {
+		resp.StatusCode = b.Resp.StatusCode
 	}
 
 	// Replace response header.
-	for k, v := range m.Resp.Header {
+	for k, v := range b.Resp.Header {
 		resp.Header.Set(k, v)
 	}
 
 	// Modify response body with the local file.
-	if filePath, ok := m.Resp.Body["file"].(string); ok && filePath != "" {
+	if filePath, ok := b.Resp.Body["file"].(string); ok && filePath != "" {
 		newBody, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Error("Failed to load local file: %v", err)
@@ -103,17 +102,16 @@ func (m *Module) DoResponse(resp *http.Response, body []byte) {
 		body = newBody
 	}
 
-	if replacement, ok := m.Resp.Body["replace"].(map[interface{}]interface{}); ok { // Replace body's keywords
+	if replacement, ok := b.Resp.Body["replace"].(map[string]interface{}); ok { // Replace body's keywords
 		bodyString := string(body)
 		for k, v := range replacement {
-			key, keyOk := k.(string)
 			value, valueOk := v.(string)
-			if keyOk && valueOk {
-				bodyString = strings.ReplaceAll(bodyString, key, value)
+			if valueOk {
+				bodyString = strings.ReplaceAll(bodyString, k, value)
 			}
 		}
 		body = []byte(bodyString)
-	} else if newContent, ok := m.Resp.Body["replace"].(string); ok { // Replace the whole body.
+	} else if newContent, ok := b.Resp.Body["replace"].(string); ok { // Replace the whole body.
 		body = []byte(newContent)
 	}
 
@@ -121,8 +119,8 @@ func (m *Module) DoResponse(resp *http.Response, body []byte) {
 	resp.Body = io.NopCloser(bytes.NewBuffer(body))
 }
 
-func (m *Module) isResponseHit(resp *http.Response, body []byte) bool {
-	result, _, err := m.Resp.OnPrg.Eval(map[string]interface{}{
+func (b *Body) isResponseHit(resp *http.Response, body []byte) bool {
+	result, _, err := b.Resp.OnPrg.Eval(map[string]interface{}{
 		"url":         resp.Request.URL.String(),
 		"status_code": resp.StatusCode,
 		"headers":     resp.Header,

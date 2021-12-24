@@ -1,37 +1,26 @@
 {{ template "base/header" . }}
 
-<div class="hero">
-  <div class="flex-col justify-center hero-content lg:flex-row">
-    <div class="text-center lg:text-left">
-      <h1 class="mb-5 text-5xl font-bold">
-        Hello there
-      </h1>
-      <p class="mb-5">
-
-      </p>
-    </div>
-    <div class="card flex-shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
-      <div class="card-body">
-        {{ if .Enabled }}
-        <form action="/proxy/shut_down" method="post">
-          {{ else }}
-          <form action="/proxy/start" method="post">
-            {{ end }}
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Address</span>
-              </label>
-              <input type="text" name="Address" class="input input-bordered">
-            </div>
-            <div class="form-control mt-6">
+<div class="flex-col justify-center lg:flex-row">
+  <div class="card flex-shrink-0 w-full shadow-xl bg-base-100">
+    <div class="card-body">
+      <form
               {{ if .Enabled }}
-              <input type="submit" value="Stop proxy" class="btn btn-primary">
+              action="/proxy/shut_down"
               {{ else }}
-              <input type="submit" value="Start proxy" class="btn btn-primary">
+              action="/proxy/start"
               {{ end }}
-            </div>
-          </form>
-      </div>
+              method="post">
+        <label class="label"><span class="label-text">Address</span></label>
+        <input type="text" name="Address" class="input input-sm input-bordered" value="localhost:8080">
+        {{ if .Enabled }}
+        <input type="submit" value="Stop proxy" class="btn btn-secondary btn-sm">
+        {{ else }}
+        <input type="submit" value="Start proxy" class="btn btn-primary btn-sm">
+        {{ end }}
+      </form>
+      <form method="post" action="/chromedp/">
+        <input type="submit" value="Start Browser" class="btn btn-ghost btn-sm">
+      </form>
     </div>
   </div>
 </div>

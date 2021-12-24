@@ -3,6 +3,7 @@ module github.com/wuhan005/Houki
 go 1.16
 
 require (
+	github.com/chromedp/chromedp v0.7.4
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
 	github.com/flamego/binding v0.0.0-20210821162210-4f53bad2a3a6
 	github.com/flamego/flamego v0.0.0-20210821060740-3c58a415258e
@@ -19,7 +20,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli/v2 v2.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	unknwon.dev/clog/v2 v2.2.0
 	upper.io/db.v3 v3.8.0+incompatible
 )
