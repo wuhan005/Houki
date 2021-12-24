@@ -27,8 +27,6 @@ func (*ProxyHandler) Dashboard(ctx context.Context, t template.Template, data te
 }
 
 func (*ProxyHandler) Start(ctx context.Context, f form.StartProxy) {
-	defer func() { ctx.Redirect("/proxy/") }()
-
 	if err := proxy.Start(f.Address); err != nil {
 		log.Error("Failed to start proxy: %v", err)
 		return
@@ -38,6 +36,8 @@ func (*ProxyHandler) Start(ctx context.Context, f form.StartProxy) {
 		log.Error("Failed to reload modules: %v", err)
 		return
 	}
+
+	ctx.Success("success")
 }
 
 func (*ProxyHandler) ShutDown(ctx context.Context) {

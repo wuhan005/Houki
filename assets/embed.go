@@ -2,13 +2,11 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package form
+package assets
 
 import (
-	"encoding/json"
+	"embed"
 )
 
-type NewModule struct {
-	ID   string
-	Body json.RawMessage
-}
+//go:embed static/*
+var StaticFS embed.FS
