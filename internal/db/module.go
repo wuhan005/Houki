@@ -55,7 +55,7 @@ func (db *modules) List(ctx context.Context, opts GetModuleOptions) ([]*Module, 
 	var modules []*Module
 	q := db.WithContext(ctx).SelectFrom("modules")
 	if opts.EnabledOnly {
-		q.Where("enabled = TRUE")
+		q = q.Where("enabled = TRUE")
 	}
 	return modules, q.All(&modules)
 }

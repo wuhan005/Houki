@@ -154,7 +154,7 @@ func (*ModulesHandler) Update(ctx context.Context, f form.UpdateModule) {
 		ctx.ServerError()
 		return
 	}
-	
+
 	ctx.Success("success")
 }
 

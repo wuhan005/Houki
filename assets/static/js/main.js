@@ -43,7 +43,7 @@ async function newModule() {
         body: JSON.stringify({ID: moduleID, Body: body})
     }).then(async res => {
         if (res.status === 200) {
-            window.location.href = '/modules/'
+            window.location.href = '/'
             return
         }
         alert((await res.json()).msg)
@@ -57,7 +57,7 @@ async function reloadModule() {
         method: 'POST',
     }).then(async res => {
         if (res.status === 200) {
-            window.location.href = '/modules/'
+            window.location.href = '/'
             return
         }
         alert((await res.json()).msg)
@@ -95,7 +95,7 @@ async function deleteModule(id) {
         method: 'DELETE',
     }).then(async res => {
         if (res.status === 200) {
-            window.location.href = '/modules/'
+            window.location.href = '/'
             return
         }
         alert((await res.json()).msg)
