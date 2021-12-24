@@ -1,18 +1,18 @@
 # 🧹 Houki ![Go](https://github.com/wuhan005/Houki/workflows/Go/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/wuhan005/Houki)](https://goreportcard.com/report/github.com/wuhan005/Houki) [![Sourcegraph](https://img.shields.io/badge/view%20on-Sourcegraph-brightgreen.svg?logo=sourcegraph)](https://sourcegraph.com/github.com/wuhan005/Houki)
 
-Customizable MitM proxy. [简体中文](./README_zh.md)
+可定制化的中间人代理。
 
 [![](./.github/readme/bili2pili-demo.png)]()
 
-## Installation
+## 安装
 
-1. Clone the repository
+1. 克隆仓库
 
 ```bash
 git clone git@github.com:wuhan005/Houki.git
  ```
 
-2. Build the binary
+2. 编译程序
 
 ```bash
 cd Houki
@@ -20,17 +20,17 @@ cd Houki
 go build .
 ```
 
-3. Run the binary
+3. 运行程序
 
 ```bash
 ./Houki web
 ```
 
-## Usage
+## 使用方法
 
-You can create module to intercept and modify the request and response.
+你可以创建模块用于拦截修改 HTTP 请求与响应。
 
-Here is a simple example module configuration which replaces the `bilibili` `哔哩哔哩` to `pilipili` `批哩批哩`。
+以下模块配置示例将响应体中的 `bilibili` `哔哩哔哩` 替换为 `pilipili` `批哩批哩`：
 
 ```json
 {
@@ -52,23 +52,22 @@ Here is a simple example module configuration which replaces the `bilibili` `哔
 }
 ```
 
-Then click the `START PROXY` button to start the proxy. You can set your browser's proxy manually or just click
-the `OPEN BROWSER` to open a new browser window with the proxy.
+点击 `START PORXY` 启动代理，你可以手动配置浏览器代理或者点击 `OPEN BROWSER` 来直接打开浏览器。
 
-Enjoy it!
-
+祝你玩得开心！
 
 <img align="right" width=150px src="./.github/readme/Houki_500x.png"/>
 
-## What/Who is Houki?
+## 谁是 Houki?
 
-[Houki(ほうき)](https://zh.moegirl.org.cn/index.php?title=%E6%89%AB%E5%B8%9A(%E9%AD%94%E5%A5%B3%E4%B9%8B%E6%97%85)), is the
-broom used by Elaina in [*Wandering Witch: The Journey of
-Elaina*](https://en.wikipedia.org/wiki/Wandering_Witch:_The_Journey_of_Elaina). Elaina uses magic to turn it into a
-human, whose appearance is very similar to hers.
+[Houki(ほうき)](https://zh.moegirl.org.cn/index.php?title=%E6%89%AB%E5%B8%9A(%E9%AD%94%E5%A5%B3%E4%B9%8B%E6%97%85)),
+是轻小说 [*魔女之旅*](https://zh.moegirl.org.cn/%E9%AD%94%E5%A5%B3%E4%B9%8B%E6%97%85) 中主角伊蕾娜的扫帚. 伊蕾娜对其施加了
+“将物品变成人”的魔法，从而获得了与伊蕾娜相似的外貌。
+
+~~这个项目为什么叫 Houki 呢？因为我嗑伊蕾娜✕扫帚。~~
 
 > [PixivID: 84262335](https://www.pixiv.net/artworks/84262335)
 
-## License
+## 开源协议
 
 MIT
