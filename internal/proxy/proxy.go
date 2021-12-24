@@ -116,10 +116,6 @@ func (p *Proxy) shutdown() error {
 	return nil
 }
 
-func (p *Proxy) isEnable() bool {
-	return p.enable
-}
-
 // SetCA sets the goproxy server certificate globally.
 func (p *Proxy) SetCA(caCert, caKey []byte) error {
 	proxyCA, err := tls.X509KeyPair(caCert, caKey)
