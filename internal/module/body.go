@@ -21,8 +21,7 @@ type Body struct {
 	Title       string `json:"title"`
 	Author      string `json:"author"`
 	Description string `json:"description"`
-	Sign        string `json:"sign"`
-	Enabled     bool   `json:"enabled"`
+	Sign        string `json:"-"`
 
 	Req  *Request  `json:"request"`
 	Resp *Response `json:"response"`
