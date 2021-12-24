@@ -74,7 +74,6 @@ func runWeb(c *cli.Context) error {
 
 	modules := route.NewModulesHandler()
 	f.Group("/modules", func() {
-		f.Get("/", modules.List)
 		f.Post("/reload", modules.RefreshModule)
 		f.Combo("/new").Get(modules.New).Post(binding.JSON(form.NewModule{}), modules.NewAction)
 		f.Post("/{id}/enable", modules.SetStatus(route.Enable))

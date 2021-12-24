@@ -11,6 +11,7 @@ import (
 	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/internal/context"
+	"github.com/wuhan005/Houki/internal/db"
 	"github.com/wuhan005/Houki/internal/form"
 	"github.com/wuhan005/Houki/internal/proxy"
 )
@@ -22,6 +23,13 @@ func NewProxyHandler() *ProxyHandler {
 }
 
 func (*ProxyHandler) Dashboard(ctx context.Context, t template.Template, data template.Data) {
+	modules, err := db.Modules.List(ctx.Request().Context(), db.GetModuleOptions{})
+	if err != nil {
+		log.Error("Failed to list modules: %v", err)
+		ctx.ServerError()
+		return
+	}
+	data["Modules"] = modules
 	data["Enabled"] = proxy.IsEnabled()
 	t.HTML(http.StatusOK, "proxy")
 }

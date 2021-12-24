@@ -29,17 +29,6 @@ func NewModulesHandler() *ModulesHandler {
 	return &ModulesHandler{}
 }
 
-func (*ModulesHandler) List(ctx context.Context, t template.Template, data template.Data) {
-	modules, err := db.Modules.List(ctx.Request().Context(), db.GetModuleOptions{})
-	if err != nil {
-		log.Error("Failed to list modules: %v", err)
-		ctx.ServerError()
-		return
-	}
-	data["Modules"] = modules
-	t.HTML(http.StatusOK, "modules")
-}
-
 func (*ModulesHandler) RefreshModule(ctx context.Context) {
 	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
 		log.Error("Failed to reload modules: %v", err)
@@ -127,7 +116,7 @@ func (*ModulesHandler) Get(ctx context.Context, t template.Template, data templa
 
 	mod, err := db.Modules.Get(ctx.Request().Context(), id)
 	if err != nil {
-		ctx.Redirect("/modules/")
+		ctx.Redirect("/")
 		return
 	}
 
@@ -160,6 +149,12 @@ func (*ModulesHandler) Update(ctx context.Context, f form.UpdateModule) {
 		ctx.ServerError()
 		return
 	}
+	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
+		log.Error("Failed to reload modules: %v", err)
+		ctx.ServerError()
+		return
+	}
+	
 	ctx.Success("success")
 }
 
@@ -170,5 +165,11 @@ func (*ModulesHandler) Delete(ctx context.Context) {
 		ctx.ServerError()
 		return
 	}
+	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
+		log.Error("Failed to reload modules: %v", err)
+		ctx.ServerError()
+		return
+	}
+
 	ctx.Success("success")
 }
