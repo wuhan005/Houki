@@ -101,7 +101,7 @@ func (db *modules) Update(ctx context.Context, id string, opts UpdateModuleOptio
 		return err
 	}
 
-	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Set("body = ?", opts.Body).Error
+	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Update("body", opts.Body).Error
 }
 
 func (db *modules) SetStatus(ctx context.Context, id string, enabled bool) error {
@@ -110,7 +110,7 @@ func (db *modules) SetStatus(ctx context.Context, id string, enabled bool) error
 		return err
 	}
 
-	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Set("enabled = ?", enabled).Error
+	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Update("enabled", enabled).Error
 }
 
 func (db *modules) Delete(ctx context.Context, id string) error {
