@@ -5,11 +5,11 @@
 package context
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/flamego/flamego"
-	jsoniter "github.com/json-iterator/go"
 	log "unknwon.dev/clog/v2"
 )
 
@@ -40,7 +40,7 @@ func (c *Context) Success(data ...interface{}) {
 		d = ""
 	}
 
-	err := jsoniter.NewEncoder(c.ResponseWriter()).Encode(
+	err := json.NewEncoder(c.ResponseWriter()).Encode(
 		map[string]interface{}{
 			"error": 0,
 			"data":  d,
@@ -65,7 +65,7 @@ func (c *Context) Error(errorCode uint, message string, v ...interface{}) {
 		message = fmt.Sprintf(message, v...)
 	}
 
-	err := jsoniter.NewEncoder(c.ResponseWriter()).Encode(
+	err := json.NewEncoder(c.ResponseWriter()).Encode(
 		map[string]interface{}{
 			"error": errorCode,
 			"msg":   message,

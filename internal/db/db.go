@@ -5,11 +5,9 @@
 package db
 
 import (
-	"database/sql"
-
+	"github.com/glebarez/sqlite"
 	"github.com/pkg/errors"
-	"upper.io/db.v3/lib/sqlbuilder"
-	"upper.io/db.v3/sqlite"
+	"gorm.io/gorm"
 
 	"github.com/wuhan005/Houki/assets/migrations"
 	"github.com/wuhan005/Houki/internal/dbutil"
@@ -17,15 +15,18 @@ import (
 
 var Modules ModulesStore
 
-func New() (sqlbuilder.Database, error) {
-	db, err := sqlite.Open(sqlite.ConnectionURL{
-		Database: "houki.db",
-	})
+func New() (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open("houki.db"))
 	if err != nil {
 		return nil, errors.Wrap(err, "open database")
 	}
 
-	_, err = dbutil.Migrate(db.Driver().(*sql.DB), migrations.Migrations)
+	sqlDatabase, err := db.DB()
+	if err != nil {
+		return nil, errors.Wrap(err, "get sql database")
+	}
+
+	_, err = dbutil.Migrate(sqlDatabase, migrations.Migrations)
 	if err != nil {
 		return nil, errors.Wrap(err, "migrate")
 	}

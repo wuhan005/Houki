@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	dbv3 "upper.io/db.v3"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"gorm.io/gorm"
 
 	"github.com/wuhan005/Houki/internal/dbutil"
 	"github.com/wuhan005/Houki/internal/module"
@@ -27,7 +26,7 @@ type ModulesStore interface {
 	Delete(ctx context.Context, id string) error
 }
 
-func NewModulesStore(db sqlbuilder.Database) ModulesStore {
+func NewModulesStore(db *gorm.DB) ModulesStore {
 	return &modules{db}
 }
 
@@ -44,7 +43,7 @@ func (m *Module) IsEnabled() bool {
 }
 
 type modules struct {
-	sqlbuilder.Database
+	*gorm.DB
 }
 
 type GetModuleOptions struct {
@@ -53,20 +52,20 @@ type GetModuleOptions struct {
 
 func (db *modules) List(ctx context.Context, opts GetModuleOptions) ([]*Module, error) {
 	var modules []*Module
-	q := db.WithContext(ctx).SelectFrom("modules")
+	q := db.WithContext(ctx).Model(&Module{})
 	if opts.EnabledOnly {
 		q = q.Where("enabled = TRUE")
 	}
-	return modules, q.All(&modules)
+	return modules, q.Find(&modules).Error
 }
 
 var ErrModuleNotFound = errors.New("module does not found")
 
 func (db *modules) Get(ctx context.Context, id string) (*Module, error) {
 	var module Module
-	err := db.WithContext(ctx).SelectFrom("modules").Where("id = ?", id).One(&module)
+	err := db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).First(&module).Error
 	if err != nil {
-		if err == dbv3.ErrNoMoreRows {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrModuleNotFound
 		}
 		return nil, err
@@ -82,10 +81,10 @@ type CreateModuleOptions struct {
 var ErrModuleExists = errors.New("module has already been created")
 
 func (db *modules) Create(ctx context.Context, opts CreateModuleOptions) error {
-	_, err := db.WithContext(ctx).InsertInto("modules").
-		Columns("id", "body").
-		Values(opts.ID, opts.Body).
-		Exec()
+	err := db.WithContext(ctx).Model(&Module{}).Create(&Module{
+		ID:   opts.ID,
+		Body: opts.Body,
+	}).Error
 	if dbutil.IsUniqueViolation(err, "idx_module_id") {
 		return ErrModuleExists
 	}
@@ -102,11 +101,7 @@ func (db *modules) Update(ctx context.Context, id string, opts UpdateModuleOptio
 		return err
 	}
 
-	_, err = db.WithContext(ctx).
-		Update("modules").
-		Set("body", opts.Body).
-		Where("id = ?", id).Exec()
-	return err
+	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Update("body", opts.Body).Error
 }
 
 func (db *modules) SetStatus(ctx context.Context, id string, enabled bool) error {
@@ -115,11 +110,7 @@ func (db *modules) SetStatus(ctx context.Context, id string, enabled bool) error
 		return err
 	}
 
-	_, err = db.WithContext(ctx).
-		Update("modules").
-		Set("enabled", enabled).
-		Where("id = ?", id).Exec()
-	return err
+	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Update("enabled", enabled).Error
 }
 
 func (db *modules) Delete(ctx context.Context, id string) error {
@@ -128,6 +119,5 @@ func (db *modules) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	_, err = db.WithContext(ctx).DeleteFrom("modules").Where("id = ?", id).Exec()
-	return err
+	return db.WithContext(ctx).Model(&Module{}).Delete("id = ?", id).Error
 }
