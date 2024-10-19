@@ -5,8 +5,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/internal/cmd"
 )
@@ -16,12 +16,6 @@ var (
 )
 
 func main() {
-	defer log.Stop()
-	err := log.NewConsole()
-	if err != nil {
-		panic(err)
-	}
-
 	app := cli.NewApp()
 	app.Name = "Houki"
 	app.Usage = "Customizable MitM proxy"
@@ -30,7 +24,7 @@ func main() {
 		cmd.Web,
 	}
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal("Failed to start application: %v", err)
+		logrus.Fatal("Failed to start application: %v", err)
 	}
 
 	sig := make(chan os.Signal, 1)

@@ -26,8 +26,7 @@ func New() (*gorm.DB, error) {
 		return nil, errors.Wrap(err, "get sql database")
 	}
 
-	_, err = dbutil.Migrate(sqlDatabase, migrations.Migrations)
-	if err != nil {
+	if _, err = dbutil.Migrate(sqlDatabase, migrations.Migrations); err != nil {
 		return nil, errors.Wrap(err, "migrate")
 	}
 
