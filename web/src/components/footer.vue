@@ -1,5 +1,7 @@
 <template>
-  <a-layout-footer class="footer">Arco Pro</a-layout-footer>
+  <a-layout-footer class="footer">
+    Houki
+  </a-layout-footer>
 </template>
 
 <script lang="ts" setup></script>
