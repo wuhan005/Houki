@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
+import type { AxiosResponse } from 'axios';
 import { Message } from '@arco-design/web-vue';
 
 export interface HttpResponse<T = unknown> {

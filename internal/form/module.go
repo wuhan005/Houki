@@ -9,9 +9,11 @@ import (
 )
 
 type CreateModule struct {
-	Body json.RawMessage `json:"body"`
+	Name string          `json:"name" valid:"required"`
+	Body json.RawMessage `json:"body" valid:"required"`
 }
 
 type UpdateModule struct {
-	Body json.RawMessage `json:"body"`
+	Name string          `json:"name" valid:"required"`
+	Body json.RawMessage `json:"body" valid:"required"`
 }

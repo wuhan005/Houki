@@ -118,23 +118,53 @@
     row-key="id"
     :loading="isLoading"
     :pagination="pagination"
-    :columns="COLUMNS"
+    :columns="(cloneColumns as TableColumnData[])"
     :data="modulesData"
     :bordered="false"
     :size="size"
     @page-change="handlePageChange"
   >
+    <template #enabled="{ record }">
+      <a-tag :color="record.enabled ? 'green' : 'gray'">
+        {{ record.enabled ? 'Enabled' : 'Disabled' }}
+      </a-tag>
+    </template>
+    <template #createdAt="{ record }">
+      {{ dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss') }}
+    </template>
+    <template #action="{ record }">
+      <a-space>
+        <a-button type="text" @click="handleEdit(record)">
+          <icon-edit />
+        </a-button>
+        <a-popconfirm
+          content="Are you sure you want to delete?"
+          @ok="handleDelete(record)"
+        >
+          <a-button type="text">
+            <icon-delete />
+          </a-button>
+        </a-popconfirm>
+      </a-space>
+    </template>
   </a-table>
 </template>
 
 <script setup lang="ts">
   import { ref, onMounted, nextTick, watch } from 'vue';
   import { Pagination } from '@/types';
-  import { listModules, ListModulesParams } from '@/api/modules';
+  import {
+    deleteModule,
+    listModules,
+    ListModulesParams,
+    Module,
+  } from '@/api/modules';
   import type { TableColumnData } from '@arco-design/web-vue/es/table/interface';
   import cloneDeep from 'lodash/cloneDeep';
   import Sortable from 'sortablejs';
   import { useRouter } from 'vue-router';
+  import dayjs from 'dayjs';
+  import { Message } from '@arco-design/web-vue';
 
   const router = useRouter();
 
@@ -146,7 +176,30 @@
     { name: 'Medium', value: 'medium' },
     { name: 'Large', value: 'large' },
   ];
-  const COLUMNS: TableColumnData[] = [];
+  const COLUMNS: TableColumnData[] = [
+    { title: 'Name', dataIndex: 'name', key: 'name' },
+    {
+      title: 'Enabled',
+      dataIndex: 'enabled',
+      slotName: 'enabled',
+      key: 'enabled',
+      width: 150,
+    },
+    {
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      slotName: 'createdAt',
+      key: 'createdAt',
+      width: 200,
+    },
+    {
+      title: 'Action',
+      dataIndex: 'action',
+      slotName: 'action',
+      key: 'action',
+      width: 300,
+    },
+  ];
 
   const isLoading = ref<boolean>(true);
   const size = ref<SizeProps>('medium');
@@ -158,7 +211,7 @@
     pageSize: 10,
     total: 0,
   });
-  const modulesData = ref([]);
+  const modulesData = ref<Module[]>([]);
   const fetchTableData = () => {
     isLoading.value = true;
 
@@ -168,7 +221,7 @@
       pageSize: pagination.value.pageSize,
     })
       .then((res) => {
-        modulesData.value = res.data;
+        modulesData.value = res.modules;
         pagination.value.total = res.total;
       })
       .finally(() => {
@@ -188,7 +241,6 @@
   };
 
   const handlePageChange = (current: number) => {
-    pagination.value.page = 1;
     pagination.value.current = current;
     fetchTableData();
   };
@@ -260,6 +312,23 @@
 
   const handleNewModule = () => {
     router.push({ name: 'new-module' });
+  };
+
+  const handleEdit = (record: Module) => {
+    router.push({
+      name: 'update-module',
+      params: { id: record.id },
+    });
+  };
+
+  const handleDelete = (record: Module) => {
+    deleteModule(record.id)
+      .then((res) => {
+        Message.success(res);
+      })
+      .finally(() => {
+        fetchTableData();
+      });
   };
 
   onMounted(() => {

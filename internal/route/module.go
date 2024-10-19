@@ -53,6 +53,7 @@ func (*ModulesHandler) Create(ctx context.Context, f form.CreateModule) error {
 	}
 
 	module, err := db.Modules.Create(ctx.Request().Context(), db.CreateModuleOptions{
+		Name: f.Name,
 		Body: &body,
 	})
 	if err != nil {
@@ -64,7 +65,7 @@ func (*ModulesHandler) Create(ctx context.Context, f form.CreateModule) error {
 }
 
 func (*ModulesHandler) Moduler(ctx context.Context) error {
-	moduleID := uint(ctx.ParamsInt("id"))
+	moduleID := uint(ctx.ParamInt("id"))
 
 	module, err := db.Modules.Get(ctx.Request().Context(), moduleID)
 	if err != nil {
@@ -123,6 +124,7 @@ func (*ModulesHandler) Update(ctx context.Context, module *db.Module, f form.Upd
 	}
 
 	if err := db.Modules.Update(ctx.Request().Context(), module.ID, db.UpdateModuleOptions{
+		Name: f.Name,
 		Body: &body,
 	}); err != nil {
 		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to update module")

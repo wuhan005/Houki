@@ -33,6 +33,7 @@ func NewModulesStore(db *gorm.DB) ModulesStore {
 type Module struct {
 	dbutil.Model
 
+	Name    string           `json:"name"`
 	Body    *modulespkg.Body `json:"body"`
 	Enabled bool             `json:"enabled"`
 }
@@ -85,11 +86,13 @@ func (db *modules) Get(ctx context.Context, id uint) (*Module, error) {
 }
 
 type CreateModuleOptions struct {
+	Name string
 	Body *modulespkg.Body
 }
 
 func (db *modules) Create(ctx context.Context, opts CreateModuleOptions) (*Module, error) {
 	module := &Module{
+		Name: opts.Name,
 		Body: opts.Body,
 	}
 	if err := db.WithContext(ctx).Model(&Module{}).Create(&module).Error; err != nil {
@@ -99,11 +102,15 @@ func (db *modules) Create(ctx context.Context, opts CreateModuleOptions) (*Modul
 }
 
 type UpdateModuleOptions struct {
+	Name string
 	Body *modulespkg.Body
 }
 
 func (db *modules) Update(ctx context.Context, id uint, opts UpdateModuleOptions) error {
-	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Update("body", opts.Body).Error
+	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).
+		Update("name", opts.Name).
+		Update("body", opts.Body).
+		Error
 }
 
 func (db *modules) SetStatus(ctx context.Context, id uint, enabled bool) error {
