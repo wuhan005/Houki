@@ -29,7 +29,7 @@ func Contexter() flamego.Handler {
 	}
 }
 
-func (c *Context) Success(data ...interface{}) {
+func (c *Context) Success(data ...interface{}) error {
 	c.ResponseWriter().Header().Set("Content-Type", "application/json")
 	c.ResponseWriter().WriteHeader(http.StatusOK)
 
@@ -42,18 +42,20 @@ func (c *Context) Success(data ...interface{}) {
 
 	if err := json.NewEncoder(c.ResponseWriter()).Encode(
 		map[string]interface{}{
+			"msg":  "success",
 			"data": d,
 		},
 	); err != nil {
 		logrus.WithContext(c.Request().Context()).WithError(err).Error("Failed to encode JSON response")
 	}
+	return nil
 }
 
-func (c *Context) ServerError() {
-	c.Error(http.StatusInternalServerError, "Internal server error")
+func (c *Context) ServerError() error {
+	return c.Error(http.StatusInternalServerError, "Internal server error")
 }
 
-func (c *Context) Error(statusCode int, message string, v ...interface{}) {
+func (c *Context) Error(statusCode int, message string, v ...interface{}) error {
 	c.ResponseWriter().Header().Set("Content-Type", "application/json")
 	c.ResponseWriter().WriteHeader(statusCode)
 
@@ -68,4 +70,5 @@ func (c *Context) Error(statusCode int, message string, v ...interface{}) {
 	); err != nil {
 		logrus.WithContext(c.Request().Context()).WithError(err).Error("Failed to encode JSON response")
 	}
+	return nil
 }

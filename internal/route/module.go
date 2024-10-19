@@ -5,21 +5,19 @@
 package route
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"regexp"
 
 	"github.com/flamego/flamego"
-	"github.com/flamego/template"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/db"
+	"github.com/wuhan005/Houki/internal/dbutil"
 	"github.com/wuhan005/Houki/internal/form"
-	"github.com/wuhan005/Houki/internal/module"
+	"github.com/wuhan005/Houki/internal/modules"
 	"github.com/wuhan005/Houki/internal/proxy"
 )
 
@@ -27,6 +25,58 @@ type ModulesHandler struct{}
 
 func NewModulesHandler() *ModulesHandler {
 	return &ModulesHandler{}
+}
+
+func (*ModulesHandler) List(ctx context.Context) error {
+	modules, total, err := db.Modules.List(ctx.Request().Context(), db.ListModuleOptions{
+		EnabledOnly: ctx.QueryBool("enabled"),
+		Pagination: dbutil.Pagination{
+			Page:     ctx.QueryInt("page"),
+			PageSize: ctx.QueryInt("pageSize"),
+		},
+	})
+	if err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to list modules")
+		return ctx.ServerError()
+	}
+
+	return ctx.Success(map[string]interface{}{
+		"modules": modules,
+		"total":   total,
+	})
+}
+
+func (*ModulesHandler) Create(ctx context.Context, f form.CreateModule) error {
+	var body modules.Body
+	if err := json.Unmarshal(f.Body, &body); err != nil {
+		return ctx.Error(http.StatusBadRequest, "Failed to parse module body: %v", err)
+	}
+
+	module, err := db.Modules.Create(ctx.Request().Context(), db.CreateModuleOptions{
+		Body: &body,
+	})
+	if err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to create module")
+		return ctx.ServerError()
+	}
+
+	return ctx.Success(module)
+}
+
+func (*ModulesHandler) Moduler(ctx context.Context) error {
+	moduleID := uint(ctx.ParamsInt("id"))
+
+	module, err := db.Modules.Get(ctx.Request().Context(), moduleID)
+	if err != nil {
+		if errors.Is(err, db.ErrModuleNotFound) {
+			return ctx.Error(http.StatusNotFound, "Module not found")
+		}
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to get module")
+		return ctx.ServerError()
+	}
+
+	ctx.Map(module)
+	return nil
 }
 
 func (*ModulesHandler) RefreshModule(ctx context.Context) {
@@ -44,20 +94,8 @@ const (
 )
 
 func (*ModulesHandler) SetStatus(status string) flamego.Handler {
-	return func(ctx context.Context) {
-		moduleID := ctx.Params("id")
-		mod, err := db.Modules.Get(ctx.Request().Context(), moduleID)
-		if err != nil {
-			if errors.Is(err, db.ErrModuleNotFound) {
-				ctx.Error(40400, "Module not found")
-				return
-			}
-			log.Error("Failed to get module: %v", err)
-			ctx.ServerError()
-			return
-		}
-
-		err = db.Modules.SetStatus(ctx.Request().Context(), mod.ID, status == Enable)
+	return func(ctx context.Context, module *db.Module) {
+		err := db.Modules.SetStatus(ctx.Request().Context(), module.ID, status == Enable)
 		if err != nil {
 			log.Error("Failed to set module status: %v", err)
 			ctx.ServerError()
@@ -74,102 +112,40 @@ func (*ModulesHandler) SetStatus(status string) flamego.Handler {
 	}
 }
 
-func (*ModulesHandler) New(ctx context.Context, t template.Template) {
-	t.HTML(http.StatusOK, "new_module")
+func (*ModulesHandler) Get(ctx context.Context, module *db.Module) error {
+	return ctx.Success(module)
 }
 
-func (*ModulesHandler) NewAction(ctx context.Context, f form.NewModule) {
-	var body module.Body
+func (*ModulesHandler) Update(ctx context.Context, module *db.Module, f form.UpdateModule) error {
+	var body modules.Body
 	if err := json.Unmarshal(f.Body, &body); err != nil {
-		ctx.Error(40000, "Failed to parse module body: %v", err)
-		return
+		return ctx.Error(http.StatusBadRequest, "Failed to parse module body: %v", err)
 	}
 
-	if f.ID == "" {
-		ctx.Error(40000, "Module ID is required")
-		return
-	}
-
-	if !regexp.MustCompile("^[a-zA-Z0-9_-]+$").MatchString(f.ID) {
-		ctx.Error(40000, "Module ID can only contain letters, numbers, underscores and dashes")
-		return
-	}
-
-	err := db.Modules.Create(ctx.Request().Context(), db.CreateModuleOptions{
-		ID:   f.ID,
-		Body: &body,
-	})
-	if err != nil {
-		if errors.Is(err, db.ErrModuleExists) {
-			ctx.Error(40000, "Module already exists")
-			return
-		}
-
-		ctx.Error(50000, fmt.Sprintf("Failed to create new module: %v", err))
-		return
-	}
-	ctx.Success("success")
-}
-
-func (*ModulesHandler) Get(ctx context.Context, t template.Template, data template.Data) {
-	id := ctx.Params("id")
-
-	mod, err := db.Modules.Get(ctx.Request().Context(), id)
-	if err != nil {
-		ctx.Redirect("/")
-		return
-	}
-
-	data["Module"] = mod
-
-	var moduleBody bytes.Buffer
-	encoder := json.NewEncoder(&moduleBody)
-	encoder.SetEscapeHTML(false)
-	encoder.SetIndent("", "  ")
-	_ = encoder.Encode(mod.Body)
-
-	data["ModuleBody"] = moduleBody.String()
-
-	t.HTML(http.StatusOK, "update_module")
-}
-
-func (*ModulesHandler) Update(ctx context.Context, f form.UpdateModule) {
-	id := ctx.Params("id")
-
-	var body module.Body
-	if err := json.Unmarshal(f.Body, &body); err != nil {
-		ctx.Error(40000, "Failed to parse module body: %v", err)
-		return
-	}
-
-	if err := db.Modules.Update(ctx.Request().Context(), id, db.UpdateModuleOptions{
+	if err := db.Modules.Update(ctx.Request().Context(), module.ID, db.UpdateModuleOptions{
 		Body: &body,
 	}); err != nil {
-		log.Error("Failed to update module: %v", err)
-		ctx.ServerError()
-		return
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to update module")
+		return ctx.ServerError()
 	}
 	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
-		log.Error("Failed to reload modules: %v", err)
-		ctx.ServerError()
-		return
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to reload all modules")
+		return ctx.ServerError()
 	}
 
-	ctx.Success("success")
+	return ctx.Success("Update module successfully")
 }
 
-func (*ModulesHandler) Delete(ctx context.Context) {
-	id := ctx.Params("id")
-	if err := db.Modules.Delete(ctx.Request().Context(), id); err != nil {
-		log.Error("Failed to delete module: %v", err)
-		ctx.ServerError()
-		return
-	}
-	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
-		log.Error("Failed to reload modules: %v", err)
-		ctx.ServerError()
-		return
+func (*ModulesHandler) Delete(ctx context.Context, module *db.Module) error {
+	if err := db.Modules.Delete(ctx.Request().Context(), module.ID); err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to delete module")
+		return ctx.ServerError()
 	}
 
-	ctx.Success("success")
+	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to reload all modules")
+		return ctx.ServerError()
+	}
+
+	return ctx.Success("Delete module successfully")
 }

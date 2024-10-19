@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package module
+package modules
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ func (b *Body) DoRequest(req *http.Request, body []byte) {
 		req.URL = b.Req.TransmitURL
 	}
 
-	for k, v := range b.Req.Header {
+	for k, v := range b.Req.Headers {
 		req.Header.Set(k, v)
 	}
 
@@ -88,7 +88,7 @@ func (b *Body) DoResponse(resp *http.Response, body []byte) {
 	}
 
 	// Replace response header.
-	for k, v := range b.Resp.Header {
+	for k, v := range b.Resp.Headers {
 		resp.Header.Set(k, v)
 	}
 

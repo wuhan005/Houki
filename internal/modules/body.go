@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package module
+package modules
 
 import (
 	"database/sql"
@@ -18,11 +18,6 @@ import (
 
 // Body is the module body.
 type Body struct {
-	Title       string `json:"title"`
-	Author      string `json:"author"`
-	Description string `json:"description"`
-	Sign        string `json:"-"`
-
 	Req  *Request  `json:"request"`
 	Resp *Response `json:"response"`
 
@@ -97,7 +92,7 @@ type Request struct {
 
 	Transmit    string                 `json:"transmit"`
 	TransmitURL *url.URL               `json:"-"`
-	Header      map[string]string      `json:"header"`
+	Headers     map[string]string      `json:"headers"`
 	Body        map[string]interface{} `json:"-"` //FIXME
 }
 
@@ -105,8 +100,8 @@ type Response struct {
 	On    string      `json:"on"`
 	OnPrg cel.Program `json:"-"`
 
-	StatusCode int                    `json:"status_code"`
-	Header     map[string]string      `json:"header"`
+	StatusCode int                    `json:"statusCode"`
+	Headers    map[string]string      `json:"headers"`
 	Body       map[string]interface{} `json:"body"` //FIXME
 }
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/db"
+	"github.com/wuhan005/Houki/internal/form"
 	"github.com/wuhan005/Houki/internal/route"
 )
 
@@ -34,44 +35,37 @@ func runWeb(c *cli.Context) error {
 		context.Contexter(),
 	)
 
-	f.Get("/", func(ctx context.Context) {
-		ctx.Redirect("/proxy/")
-	})
+	f.Group("/api", func() {
 
-	proxy := route.NewProxyHandler()
-	f.Group("/proxy", func() {
-		f.Get("/status", proxy.Dashboard)
+		proxy := route.NewProxyHandler()
+		f.Group("/proxy", func() {
+			f.Get("/status", proxy.Status)
 
-		f.Group("/forward", func() {
-			f.Post("/start")
-			f.Post("/shutdown")
+			f.Group("/forward", func() {
+				f.Post("/start")
+				f.Post("/shutdown")
+			})
+			f.Group("/reverse", func() {
+				f.Post("/start")
+				f.Post("/shutdown")
+			})
 		})
-		f.Group("/reverse", func() {
-			f.Post("/start")
-			f.Post("/shutdown")
-		})
-		//f.Post("/start", binding.JSON(form.StartProxy{}), proxy.Start)
-		//f.Post("/shut-down", proxy.ShutDown)
-	})
 
-	modules := route.NewModulesHandler()
-	f.Group("/modules", func() {
-		f.Combo("").Get().Post()
-		f.Post("/reload", modules.RefreshModule)
-		//f.Combo("/new").Get(modules.New).Post(binding.JSON(form.NewModule{}), modules.NewAction)
-		f.Group("/{id}", func() {
-			f.Combo("").
-				Get(modules.Get).
-				Put().
-				Delete()
-			f.Post("/enable", modules.SetStatus(route.Enable))
-			f.Post("/disable", modules.SetStatus(route.Disable))
+		modules := route.NewModulesHandler()
+		f.Group("/modules", func() {
+			f.Combo("").Get(modules.List).Post(form.Bind(form.CreateModule{}), modules.Create)
+			f.Group("/{id}", func() {
+				f.Combo("").
+					Get(modules.Get).
+					Put(form.Bind(form.UpdateModule{}), modules.Update).
+					Delete(modules.Delete)
+				f.Post("/enable", modules.SetStatus(route.Enable))
+				f.Post("/disable", modules.SetStatus(route.Disable))
+			}, modules.Moduler)
+
+			f.Post("/reload", modules.RefreshModule)
 		})
-		//f.Post("/{id}/enable", modules.SetStatus(route.Enable))
-		//f.Post("/{id}/disable", modules.SetStatus(route.Disable))
-		//f.Get("/{id}", modules.Get)
-		//f.Put("/{id}", binding.JSON(form.UpdateModule{}), modules.Update)
-		//f.Delete("/{id}", modules.Delete)
+
 	})
 
 	httpPort := c.Int("port")

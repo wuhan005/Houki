@@ -7,7 +7,9 @@
       <a-layout>
         <a-layout class="layout-content">
           <a-layout-content>
-            <router-view />
+            <a-card :bordered="false">
+              <router-view />
+            </a-card>
           </a-layout-content>
           <Footer />
         </a-layout>
@@ -41,6 +43,7 @@
 
   .layout-content {
     min-height: 100vh;
+    padding: 76px 20px 0;
     overflow-y: hidden;
     background-color: var(--color-fill-2);
     transition: padding 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);

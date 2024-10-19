@@ -8,9 +8,6 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
-
-	"github.com/wuhan005/Houki/assets/migrations"
-	"github.com/wuhan005/Houki/internal/dbutil"
 )
 
 var Modules ModulesStore
@@ -21,13 +18,10 @@ func New() (*gorm.DB, error) {
 		return nil, errors.Wrap(err, "open database")
 	}
 
-	sqlDatabase, err := db.DB()
-	if err != nil {
-		return nil, errors.Wrap(err, "get sql database")
-	}
-
-	if _, err = dbutil.Migrate(sqlDatabase, migrations.Migrations); err != nil {
-		return nil, errors.Wrap(err, "migrate")
+	if err := db.AutoMigrate(
+		&Module{},
+	); err != nil {
+		return nil, errors.Wrap(err, "auto migrate")
 	}
 
 	Modules = NewModulesStore(db)

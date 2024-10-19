@@ -5,13 +5,9 @@
 package route
 
 import (
-	"net/http"
-
-	"github.com/flamego/template"
 	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/internal/context"
-	"github.com/wuhan005/Houki/internal/db"
 	"github.com/wuhan005/Houki/internal/form"
 	"github.com/wuhan005/Houki/internal/proxy"
 )
@@ -22,16 +18,8 @@ func NewProxyHandler() *ProxyHandler {
 	return &ProxyHandler{}
 }
 
-func (*ProxyHandler) Dashboard(ctx context.Context, t template.Template, data template.Data) {
-	modules, err := db.Modules.List(ctx.Request().Context(), db.GetModuleOptions{})
-	if err != nil {
-		log.Error("Failed to list modules: %v", err)
-		ctx.ServerError()
-		return
-	}
-	data["Modules"] = modules
-	data["Enabled"] = proxy.IsEnabled()
-	t.HTML(http.StatusOK, "proxy")
+func (*ProxyHandler) Status(ctx context.Context) error {
+	return ctx.Success("")
 }
 
 func (*ProxyHandler) Start(ctx context.Context, f form.StartProxy) {

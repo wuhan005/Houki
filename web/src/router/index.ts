@@ -18,6 +18,16 @@ const router = createRouter({
           name: 'modules',
           component: () => import('@/views/modules.vue'),
         },
+        {
+          path: '/modules/new',
+          name: 'new-module',
+          component: () => import('@/views/module-editor.vue'),
+        },
+        {
+          path: '/modules/:id',
+          name: 'update-module',
+          component: () => import('@/views/module-editor.vue'),
+        },
       ],
     },
     {
