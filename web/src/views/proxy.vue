@@ -1,6 +1,11 @@
 <template>
   <div style="padding-left: 24px; padding-right: 24px">
-    <a-typography-title :heading="5"> Forward Proxy</a-typography-title>
+    <a-typography-title :heading="5">
+      Forward Proxy
+      <a-tag :color="status.forward.enabled ? 'green' : 'red'">
+        {{ status.forward.enabled ? 'Enabled' : 'Disabled' }}
+      </a-tag>
+    </a-typography-title>
     <a-form layout="inline">
       <a-form-item field="Address">
         <a-input v-model="forwardAddress"></a-input>
@@ -15,7 +20,12 @@
         </a-button>
       </a-form-item>
     </a-form>
-    <a-typography-title :heading="5"> Reverse Proxy</a-typography-title>
+    <a-typography-title :heading="5">
+      Reverse Proxy
+      <a-tag :color="status.reverse.enabled ? 'green' : 'red'">
+        {{ status.reverse.enabled ? 'Enabled' : 'Disabled' }}
+      </a-tag>
+    </a-typography-title>
     <a-form layout="inline">
       <a-form-item field="Address">
         <a-input v-model="reverseAddress"></a-input>
