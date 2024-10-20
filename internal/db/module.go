@@ -18,6 +18,7 @@ var _ ModulesStore = (*modules)(nil)
 
 type ModulesStore interface {
 	List(ctx context.Context, opts ListModuleOptions) ([]*Module, int64, error)
+	All(ctx context.Context, opts AllModuleOptions) ([]*Module, error)
 	Get(ctx context.Context, id uint) (*Module, error)
 	Create(ctx context.Context, opts CreateModuleOptions) (*Module, error)
 	Update(ctx context.Context, id uint, opts UpdateModuleOptions) error
@@ -70,6 +71,23 @@ func (db *modules) List(ctx context.Context, opts ListModuleOptions) ([]*Module,
 	}
 
 	return modules, count, nil
+}
+
+type AllModuleOptions struct {
+	EnabledOnly bool
+}
+
+func (db *modules) All(ctx context.Context, opts AllModuleOptions) ([]*Module, error) {
+	q := db.WithContext(ctx).Model(&Module{})
+	if opts.EnabledOnly {
+		q = q.Where("enabled = TRUE")
+	}
+
+	var modules []*Module
+	if err := q.Find(&modules).Error; err != nil {
+		return nil, errors.Wrap(err, "find")
+	}
+	return modules, nil
 }
 
 var ErrModuleNotFound = errors.New("module does not found")

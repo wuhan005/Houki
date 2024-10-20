@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	log "unknwon.dev/clog/v2"
+	"github.com/sirupsen/logrus"
 )
 
 // DoRequest modify the request if the module was invoked.
@@ -32,7 +32,7 @@ func (b *Body) DoRequest(req *http.Request, body []byte) {
 	if filePath, ok := b.Req.Body["file"].(string); ok && filePath != "" {
 		newBody, err := os.ReadFile(filePath)
 		if err != nil {
-			log.Error("Failed to load body file: %v", err)
+			logrus.WithError(err).Error("Failed to load body file")
 			return
 		}
 		body = newBody
@@ -63,7 +63,7 @@ func (b *Body) isRequestHit(req *http.Request, body []byte) bool {
 		"body":    string(body),
 	})
 	if err != nil {
-		log.Error("Check module request active error: %v", err)
+		logrus.WithError(err).Error("Check module request active error")
 		return false
 	}
 
@@ -96,7 +96,7 @@ func (b *Body) DoResponse(resp *http.Response, body []byte) {
 	if filePath, ok := b.Resp.Body["file"].(string); ok && filePath != "" {
 		newBody, err := os.ReadFile(filePath)
 		if err != nil {
-			log.Error("Failed to load local file: %v", err)
+			logrus.WithError(err).Error("Failed to load local file")
 			return
 		}
 		body = newBody
@@ -127,7 +127,7 @@ func (b *Body) isResponseHit(resp *http.Response, body []byte) bool {
 		"body":        string(body),
 	})
 	if err != nil {
-		log.Error("Check module response active error: %v", err)
+		logrus.WithError(err).Error("Check module response active error")
 		return false
 	}
 

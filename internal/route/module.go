@@ -11,14 +11,12 @@ import (
 	"github.com/flamego/flamego"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	log "unknwon.dev/clog/v2"
 
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/db"
 	"github.com/wuhan005/Houki/internal/dbutil"
 	"github.com/wuhan005/Houki/internal/form"
 	"github.com/wuhan005/Houki/internal/modules"
-	"github.com/wuhan005/Houki/internal/proxy"
 )
 
 type ModulesHandler struct{}
@@ -80,13 +78,25 @@ func (*ModulesHandler) Moduler(ctx context.Context) error {
 	return nil
 }
 
-func (*ModulesHandler) RefreshModule(ctx context.Context) {
-	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
-		log.Error("Failed to reload modules: %v", err)
-		ctx.ServerError()
-		return
+func (*ModulesHandler) ReloadModules(ctx context.Context) error {
+	enabledModules, err := db.Modules.All(ctx.Request().Context(), db.AllModuleOptions{
+		EnabledOnly: true,
+	})
+	if err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to list modules")
+		return ctx.ServerError()
 	}
-	ctx.Success("success")
+
+	moduleSets := make(map[uint]*modules.Body, len(enabledModules))
+	for _, module := range enabledModules {
+		moduleSets[module.ID] = module.Body
+	}
+
+	if err := modules.ReloadAllModules(moduleSets); err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to reload modules")
+		return ctx.ServerError()
+	}
+	return ctx.Success("Reload all modules successfully")
 }
 
 const (
@@ -95,21 +105,26 @@ const (
 )
 
 func (*ModulesHandler) SetStatus(status string) flamego.Handler {
-	return func(ctx context.Context, module *db.Module) {
-		err := db.Modules.SetStatus(ctx.Request().Context(), module.ID, status == Enable)
-		if err != nil {
-			log.Error("Failed to set module status: %v", err)
-			ctx.ServerError()
-			return
+	return func(ctx context.Context, module *db.Module) error {
+		if err := db.Modules.SetStatus(ctx.Request().Context(), module.ID, status == Enable); err != nil {
+			logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to set module status")
+			return ctx.ServerError()
 		}
 
-		if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
-			log.Error("Failed to reload modules: %v", err)
-			ctx.ServerError()
-			return
-		}
+		if status == Enable {
+			if err := modules.LoadModule(module.ID, module.Body); err != nil {
+				logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to load module")
+				return ctx.ServerError()
+			}
+			return ctx.Success("Enable module successfully")
 
-		ctx.Success("success")
+		} else {
+			if err := modules.UnloadModule(module.ID); err != nil {
+				logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to unload module")
+				return ctx.ServerError()
+			}
+			return ctx.Success("Disable module successfully")
+		}
 	}
 }
 
@@ -130,8 +145,9 @@ func (*ModulesHandler) Update(ctx context.Context, module *db.Module, f form.Upd
 		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to update module")
 		return ctx.ServerError()
 	}
-	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
-		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to reload all modules")
+
+	if err := modules.LoadModule(module.ID, module.Body); err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to load module")
 		return ctx.ServerError()
 	}
 
@@ -144,8 +160,8 @@ func (*ModulesHandler) Delete(ctx context.Context, module *db.Module) error {
 		return ctx.ServerError()
 	}
 
-	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
-		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to reload all modules")
+	if err := modules.UnloadModule(module.ID); err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to unload module")
 		return ctx.ServerError()
 	}
 

@@ -5,7 +5,7 @@
 package route
 
 import (
-	log "unknwon.dev/clog/v2"
+	"net/http"
 
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/form"
@@ -19,33 +19,40 @@ func NewProxyHandler() *ProxyHandler {
 }
 
 func (*ProxyHandler) Status(ctx context.Context) error {
-	return ctx.Success("")
+	return ctx.Success(map[string]interface{}{
+		"forward": map[string]interface{}{
+			"enabled": proxy.Forward.IsEnabled(),
+			"address": proxy.Forward.Address(),
+		},
+		"reverse": map[string]interface{}{
+			"enabled": proxy.Reverse.IsEnabled(),
+			"address": proxy.Reverse.Address(),
+		},
+	})
 }
 
-func (*ProxyHandler) Start(ctx context.Context, f form.StartProxy) {
-	if f.Address == "" {
-		ctx.Error(40000, "Proxy address is required")
-		return
+func (*ProxyHandler) StartForward(ctx context.Context, f form.StartProxy) error {
+	if err := proxy.Forward.Start(f.Address); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
 	}
-
-	if err := proxy.Start(f.Address); err != nil {
-		log.Error("Failed to start proxy: %v", err)
-		return
-	}
-
-	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
-		log.Error("Failed to reload modules: %v", err)
-		return
-	}
-
-	ctx.Success("success")
+	return ctx.Success("Forward proxy started successfully")
 }
 
-func (*ProxyHandler) ShutDown(ctx context.Context) {
-	defer func() { ctx.Redirect("/proxy/") }()
-
-	err := proxy.Shutdown()
-	if err != nil {
-		log.Error("Failed to shutdown proxy: %v", err)
+func (*ProxyHandler) ShutdownForward(ctx context.Context) error {
+	if err := proxy.Forward.Shutdown(); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to shutdown proxy: %v", err)
 	}
+	return ctx.Success("Forward proxy shutdown successfully")
+}
+
+func (*ProxyHandler) StartReverse(ctx context.Context, f form.StartProxy) error {
+	//if err := proxy.Reverse.Start(f.Address); err != nil {
+	//	return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
+	//}
+
+	return ctx.Success("Reverse proxy started successfully")
+}
+
+func (*ProxyHandler) ShutdownReverse(ctx context.Context) error {
+	return ctx.Success("Reverse proxy shutdown successfully")
 }

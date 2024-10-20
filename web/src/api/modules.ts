@@ -23,7 +23,7 @@ export interface Module {
 }
 
 export interface ListModulesParams {
-  enabledOnly?: boolean;
+  enabled?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -60,5 +60,17 @@ export function updateModule(id: string | number, data: UpdateModuleData) {
 }
 
 export function deleteModule(id: string | number) {
-  return axios.delete(`/api/modules/${id}`);
+  return axios.delete<string, string>(`/api/modules/${id}`);
+}
+
+export function enableModule(id: string | number) {
+  return axios.post<string, string>(`/api/modules/${id}/enable`);
+}
+
+export function disableModule(id: string | number) {
+  return axios.post<string, string>(`/api/modules/${id}/disable`);
+}
+
+export function reloadAllModules() {
+  return axios.post<string, string>('/api/modules/reload');
 }

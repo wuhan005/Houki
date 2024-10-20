@@ -42,12 +42,12 @@ func runWeb(c *cli.Context) error {
 			f.Get("/status", proxy.Status)
 
 			f.Group("/forward", func() {
-				f.Post("/start")
-				f.Post("/shutdown")
+				f.Post("/start", form.Bind(form.StartProxy{}), proxy.StartForward)
+				f.Post("/shutdown", proxy.ShutdownForward)
 			})
 			f.Group("/reverse", func() {
-				f.Post("/start")
-				f.Post("/shutdown")
+				f.Post("/start", form.Bind(form.StartProxy{}), proxy.StartReverse)
+				f.Post("/shutdown", proxy.ShutdownReverse)
 			})
 		})
 
@@ -63,9 +63,13 @@ func runWeb(c *cli.Context) error {
 				f.Post("/disable", modules.SetStatus(route.Disable))
 			}, modules.Moduler)
 
-			f.Post("/reload", modules.RefreshModule)
+			f.Post("/reload", modules.ReloadModules)
 		})
 
+		certificate := route.NewCertificateHandler()
+		f.Combo("/certificate").
+			Get(certificate.Get).
+			Put(form.Bind(form.UpdateCertificate{}), certificate.Update)
 	})
 
 	httpPort := c.Int("port")

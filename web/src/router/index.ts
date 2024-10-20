@@ -28,6 +28,11 @@ const router = createRouter({
           name: 'update-module',
           component: () => import('@/views/module-editor.vue'),
         },
+        {
+          path: '/certificate',
+          name: 'certificate',
+          component: () => import('@/views/certificate.vue'),
+        },
       ],
     },
     {

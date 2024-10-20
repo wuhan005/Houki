@@ -63,6 +63,18 @@
   };
 
   const formData = ref<CreateModuleData | UpdateModuleData>({});
+
+  const fetchModule = () => {
+    getModule(moduleID.value).then((res) => {
+      subTitle.value = res.name;
+      formData.value = {
+        name: res.name,
+        body: res.body,
+      };
+      editorRaw.value = JSON.stringify(res.body, null, 2);
+    });
+  };
+
   const handleSave = () => {
     try {
       formData.value.body = JSON.parse(editorRaw.value);
@@ -82,24 +94,19 @@
         window.open(url.href, '_self');
       });
     } else {
-      updateModule(moduleID.value, formData.value as UpdateModuleData).then(
-        (res) => {
+      updateModule(moduleID.value, formData.value as UpdateModuleData)
+        .then((res) => {
           Message.success(res);
-        }
-      );
+        })
+        .finally(() => {
+          fetchModule();
+        });
     }
   };
 
   onMounted(() => {
     if (mode === 'update') {
-      getModule(moduleID.value).then((res) => {
-        subTitle.value = res.name;
-        formData.value = {
-          name: res.name,
-          body: res.body,
-        };
-        editorRaw.value = JSON.stringify(res.body);
-      });
+      fetchModule();
     }
   });
 </script>

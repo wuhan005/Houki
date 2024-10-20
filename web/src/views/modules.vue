@@ -9,8 +9,8 @@
       >
         <a-row :gutter="16">
           <a-col :span="8">
-            <a-form-item field="enabledOnly" label="Only Enabled">
-              <a-switch v-model="listModulesParams.enabledOnly" />
+            <a-form-item field="enabled" label="Only Enabled">
+              <a-switch v-model="listModulesParams.enabled" />
             </a-form-item>
           </a-col>
         </a-row>
