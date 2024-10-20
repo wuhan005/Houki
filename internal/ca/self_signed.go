@@ -15,7 +15,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"fmt"
 	"math/big"
 	"math/rand"
 	"net"
@@ -24,6 +23,7 @@ import (
 	"time"
 
 	"github.com/elazarl/goproxy"
+	"github.com/pkg/errors"
 )
 
 func hashSorted(lst []string) []byte {
@@ -91,7 +91,7 @@ func SignHost(ca tls.Certificate, hosts []string) (cert *tls.Certificate, err er
 			return
 		}
 	default:
-		err = fmt.Errorf("unsupported key type %T", ca.PrivateKey)
+		return nil, errors.Errorf("unsupported key type %T", ca.PrivateKey)
 	}
 
 	var derBytes []byte
@@ -106,5 +106,5 @@ func SignHost(ca tls.Certificate, hosts []string) (cert *tls.Certificate, err er
 
 func init() {
 	// Avoid deterministic random numbers
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 }

@@ -24,7 +24,7 @@ func main() {
 		cmd.Web,
 	}
 	if err := app.Run(os.Args); err != nil {
-		logrus.Fatal("Failed to start application: %v", err)
+		logrus.WithError(err).Fatal("Failed to start application")
 	}
 
 	sig := make(chan os.Signal, 1)
