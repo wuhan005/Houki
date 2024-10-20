@@ -19,6 +19,7 @@ export interface Module {
   id: number;
   name: string;
   body: ModuleBody;
+  enabled: boolean;
   createdAt: Date;
 }
 

@@ -126,13 +126,14 @@ type UpdateModuleOptions struct {
 
 func (db *modules) Update(ctx context.Context, id uint, opts UpdateModuleOptions) error {
 	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).
-		Update("name", opts.Name).
-		Update("body", opts.Body).
-		Error
+		Updates(map[string]interface{}{
+			"name": opts.Name,
+			"body": opts.Body,
+		}).Error
 }
 
 func (db *modules) SetStatus(ctx context.Context, id uint, enabled bool) error {
-	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Set("enabled", enabled).Error
+	return db.WithContext(ctx).Model(&Module{}).Where("id = ?", id).Update("enabled", enabled).Error
 }
 
 func (db *modules) Delete(ctx context.Context, id uint) error {

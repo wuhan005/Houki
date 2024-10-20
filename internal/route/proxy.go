@@ -7,8 +7,12 @@ package route
 import (
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/wuhan005/Houki/internal/context"
+	"github.com/wuhan005/Houki/internal/db"
 	"github.com/wuhan005/Houki/internal/form"
+	"github.com/wuhan005/Houki/internal/modules"
 	"github.com/wuhan005/Houki/internal/proxy"
 )
 
@@ -31,7 +35,33 @@ func (*ProxyHandler) Status(ctx context.Context) error {
 	})
 }
 
-func (*ProxyHandler) StartForward(ctx context.Context, f form.StartProxy) error {
+func (*ProxyHandler) reloadAllModules(ctx context.Context) error {
+	enabledModules, err := db.Modules.All(ctx.Request().Context(), db.AllModuleOptions{
+		EnabledOnly: true,
+	})
+	if err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to list modules")
+		return ctx.ServerError()
+	}
+
+	moduleSets := make(map[uint]*modules.Body, len(enabledModules))
+	for _, module := range enabledModules {
+		moduleSets[module.ID] = module.Body
+	}
+
+	if err := modules.ReloadAllModules(moduleSets); err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to reload modules")
+		return ctx.ServerError()
+	}
+	return nil
+}
+
+func (h *ProxyHandler) StartForward(ctx context.Context, f form.StartProxy) error {
+	_ = h.reloadAllModules(ctx)
+	if ctx.ResponseWriter().Written() {
+		return nil
+	}
+
 	if err := proxy.Forward.Start(f.Address); err != nil {
 		return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
 	}
@@ -45,7 +75,12 @@ func (*ProxyHandler) ShutdownForward(ctx context.Context) error {
 	return ctx.Success("Forward proxy shutdown successfully")
 }
 
-func (*ProxyHandler) StartReverse(ctx context.Context, f form.StartProxy) error {
+func (h *ProxyHandler) StartReverse(ctx context.Context, f form.StartProxy) error {
+	_ = h.reloadAllModules(ctx)
+	if ctx.ResponseWriter().Written() {
+		return nil
+	}
+
 	//if err := proxy.Reverse.Start(f.Address); err != nil {
 	//	return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
 	//}

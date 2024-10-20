@@ -146,7 +146,7 @@ func (*ModulesHandler) Update(ctx context.Context, module *db.Module, f form.Upd
 		return ctx.ServerError()
 	}
 
-	if err := modules.LoadModule(module.ID, module.Body); err != nil {
+	if err := modules.LoadModule(module.ID, &body); err != nil {
 		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to load module")
 		return ctx.ServerError()
 	}

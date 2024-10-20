@@ -38,7 +38,7 @@ func (b *Body) DoRequest(req *http.Request, body []byte) {
 		body = newBody
 	}
 
-	if replacement, ok := b.Resp.Body["replace"].(map[string]interface{}); ok { // Replace body's keywords.
+	if replacement, ok := b.Req.Body["replace"].(map[string]interface{}); ok { // Replace body's keywords.
 		bodyString := string(body)
 		for k, v := range replacement {
 			value, valueOk := v.(string)
@@ -47,6 +47,7 @@ func (b *Body) DoRequest(req *http.Request, body []byte) {
 			}
 		}
 		body = []byte(bodyString)
+
 	} else if newBody, ok := b.Req.Body["replace"].(string); ok { // Replace the whole body.
 		body = []byte(newBody)
 	}
@@ -111,6 +112,7 @@ func (b *Body) DoResponse(resp *http.Response, body []byte) {
 			}
 		}
 		body = []byte(bodyString)
+
 	} else if newContent, ok := b.Resp.Body["replace"].(string); ok { // Replace the whole body.
 		body = []byte(newContent)
 	}

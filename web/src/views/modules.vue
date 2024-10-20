@@ -125,9 +125,10 @@
     @page-change="handlePageChange"
   >
     <template #enabled="{ record }">
-      <a-tag :color="record.enabled ? 'green' : 'gray'">
-        {{ record.enabled ? 'Enabled' : 'Disabled' }}
-      </a-tag>
+      <a-switch
+        v-model="record.enabled"
+        @change="handleSwitchStatus(record)"
+      ></a-switch>
     </template>
     <template #createdAt="{ record }">
       {{ dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss') }}
@@ -155,6 +156,8 @@
   import { Pagination } from '@/types';
   import {
     deleteModule,
+    disableModule,
+    enableModule,
     listModules,
     ListModulesParams,
     Module,
@@ -179,7 +182,7 @@
   const COLUMNS: TableColumnData[] = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
     {
-      title: 'Enabled',
+      title: 'Status',
       dataIndex: 'enabled',
       slotName: 'enabled',
       key: 'enabled',
@@ -243,6 +246,27 @@
   const handlePageChange = (current: number) => {
     pagination.value.current = current;
     fetchTableData();
+  };
+
+  const handleSwitchStatus = (record: Module) => {
+    const newStatusEnabled = record.enabled;
+    if (newStatusEnabled) {
+      enableModule(record.id)
+        .then((res) => {
+          Message.success(res);
+        })
+        .finally(() => {
+          fetchTableData();
+        });
+    } else {
+      disableModule(record.id)
+        .then((res) => {
+          Message.success(res);
+        })
+        .finally(() => {
+          fetchTableData();
+        });
+    }
   };
 
   const handleSelectDensity = (
