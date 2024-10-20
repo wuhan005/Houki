@@ -12,6 +12,7 @@ import (
 	"github.com/wuhan005/Houki/internal/ca"
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/form"
+	"github.com/wuhan005/Houki/internal/proxy"
 )
 
 type CertificateHandler struct{}
@@ -51,6 +52,10 @@ func (*CertificateHandler) Update(ctx context.Context, f form.UpdateCertificate)
 		return ctx.ServerError()
 	}
 	ca.CleanCache()
+
+	if err := proxy.Forward.SetCA(ca.CertificatePath, ca.KeyPath); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to set CA: %v", err)
+	}
 
 	return ctx.Success("Certificate updated successfully")
 }

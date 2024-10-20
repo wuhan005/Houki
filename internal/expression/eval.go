@@ -15,6 +15,7 @@ func NewEnv() (*cel.Env, error) {
 			// Request
 			decls.NewVar("method", decls.String),
 			decls.NewVar("url", decls.String),
+			decls.NewVar("host", decls.String),
 
 			// Response
 			decls.NewVar("status_code", decls.Int),

@@ -95,8 +95,7 @@ func (p *ForwardProxy) start() error {
 }
 
 func (p *ForwardProxy) shutdown() error {
-	err := p.Server.Shutdown(context.TODO())
-	if err != nil {
+	if err := p.Server.Shutdown(context.TODO()); err != nil {
 		return errors.Wrap(err, "shut down")
 	}
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/wuhan005/Houki/internal/ca"
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/db"
 	"github.com/wuhan005/Houki/internal/form"
@@ -62,6 +63,10 @@ func (h *ProxyHandler) StartForward(ctx context.Context, f form.StartProxy) erro
 		return nil
 	}
 
+	if err := proxy.Forward.SetCA(ca.CertificatePath, ca.KeyPath); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to set CA: %v", err)
+	}
+
 	if err := proxy.Forward.Start(f.Address); err != nil {
 		return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
 	}
@@ -81,13 +86,16 @@ func (h *ProxyHandler) StartReverse(ctx context.Context, f form.StartProxy) erro
 		return nil
 	}
 
-	//if err := proxy.Reverse.Start(f.Address); err != nil {
-	//	return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
-	//}
+	if err := proxy.Reverse.Start(f.Address); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
+	}
 
 	return ctx.Success("Reverse proxy started successfully")
 }
 
 func (*ProxyHandler) ShutdownReverse(ctx context.Context) error {
+	if err := proxy.Reverse.Shutdown(); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to shutdown proxy: %v", err)
+	}
 	return ctx.Success("Reverse proxy shutdown successfully")
 }

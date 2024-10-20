@@ -21,6 +21,7 @@ func (b *Body) DoRequest(req *http.Request, body []byte) {
 	}
 
 	if b.Req.TransmitURL != nil {
+		req.Host = b.Req.TransmitURL.Host
 		req.URL = b.Req.TransmitURL
 	}
 
@@ -60,6 +61,7 @@ func (b *Body) isRequestHit(req *http.Request, body []byte) bool {
 	result, _, err := b.Req.OnPrg.Eval(map[string]interface{}{
 		"method":  req.Method,
 		"url":     req.URL.String(),
+		"host":    req.Host,
 		"headers": req.Header,
 		"body":    string(body),
 	})
@@ -124,6 +126,7 @@ func (b *Body) DoResponse(resp *http.Response, body []byte) {
 func (b *Body) isResponseHit(resp *http.Response, body []byte) bool {
 	result, _, err := b.Resp.OnPrg.Eval(map[string]interface{}{
 		"url":         resp.Request.URL.String(),
+		"host":        resp.Request.Host,
 		"status_code": resp.StatusCode,
 		"headers":     resp.Header,
 		"body":        string(body),
