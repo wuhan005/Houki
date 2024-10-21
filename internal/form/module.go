@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 )
 
-type NewModule struct {
-	ID   string
-	Body json.RawMessage
+type CreateModule struct {
+	Name string          `json:"name" valid:"required"`
+	Body json.RawMessage `json:"body" valid:"required"`
 }
 
 type UpdateModule struct {
-	Body json.RawMessage
+	Name string          `json:"name" valid:"required"`
+	Body json.RawMessage `json:"body" valid:"required"`
 }

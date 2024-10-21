@@ -5,23 +5,18 @@
 package cmd
 
 import (
+	"io/fs"
 	"net/http"
 
-	"github.com/flamego/binding"
 	"github.com/flamego/flamego"
-	"github.com/flamego/session"
-	"github.com/flamego/template"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
-	log "unknwon.dev/clog/v2"
+	"github.com/wuhan005/Houki/web"
 
-	"github.com/wuhan005/Houki/assets"
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/db"
 	"github.com/wuhan005/Houki/internal/form"
-	"github.com/wuhan005/Houki/internal/proxy"
 	"github.com/wuhan005/Houki/internal/route"
-	"github.com/wuhan005/Houki/templates"
 )
 
 var Web = &cli.Command{
@@ -35,60 +30,64 @@ var Web = &cli.Command{
 }
 
 func runWeb(c *cli.Context) error {
-	_, err := proxy.SetDefaultProxy()
-	if err != nil {
-		return errors.Wrap(err, "set default proxy")
-	}
-
-	_, err = db.New()
-	if err != nil {
+	if _, err := db.New(); err != nil {
 		return errors.Wrap(err, "new db")
 	}
 
-	f := flamego.Classic()
-	f.Use(context.Contexter())
-
-	fs, err := template.EmbedFS(templates.FS, ".", []string{".tmpl"})
+	fs, err := fs.Sub(web.Embed, "dist")
 	if err != nil {
-		log.Fatal("Failed to embed template file system: %v", err)
+		return errors.Wrap(err, "sub fs")
 	}
-	f.Use(template.Templater(template.Options{
-		FileSystem: fs,
-	}))
 
-	f.Use(flamego.Static(flamego.StaticOptions{
-		FileSystem: http.FS(assets.StaticFS),
-	}))
-	f.Use(session.Sessioner())
+	f := flamego.Classic()
+	f.Use(
+		flamego.Static(flamego.StaticOptions{
+			FileSystem: http.FS(fs),
+		}),
+		context.Contexter(),
+	)
 
-	f.Get("/", func(ctx context.Context) {
-		ctx.Redirect("/proxy/")
+	f.Group("/api", func() {
+
+		proxy := route.NewProxyHandler()
+		f.Group("/proxy", func() {
+			f.Get("/status", proxy.Status)
+
+			f.Group("/forward", func() {
+				f.Post("/start", form.Bind(form.StartProxy{}), proxy.StartForward)
+				f.Post("/shutdown", proxy.ShutdownForward)
+			})
+			f.Group("/reverse", func() {
+				f.Post("/start", form.Bind(form.StartProxy{}), proxy.StartReverse)
+				f.Post("/shutdown", proxy.ShutdownReverse)
+			})
+		})
+
+		modules := route.NewModulesHandler()
+		f.Group("/modules", func() {
+			f.Combo("").Get(modules.List).Post(form.Bind(form.CreateModule{}), modules.Create)
+			f.Group("/{id}", func() {
+				f.Combo("").
+					Get(modules.Get).
+					Put(form.Bind(form.UpdateModule{}), modules.Update).
+					Delete(modules.Delete)
+				f.Post("/enable", modules.SetStatus(route.Enable))
+				f.Post("/disable", modules.SetStatus(route.Disable))
+			}, modules.Moduler)
+
+			f.Post("/reload", modules.ReloadModules)
+		})
+
+		certificate := route.NewCertificateHandler()
+		f.Combo("/certificate").
+			Get(certificate.Get).
+			Put(form.Bind(form.UpdateCertificate{}), certificate.Update)
 	})
 
-	proxy := route.NewProxyHandler()
-	f.Group("/proxy", func() {
-		f.Get("/", proxy.Dashboard)
-		f.Post("/start", binding.JSON(form.StartProxy{}), proxy.Start)
-		f.Post("/shut-down", proxy.ShutDown)
-	})
-
-	modules := route.NewModulesHandler()
-	f.Group("/modules", func() {
-		f.Post("/reload", modules.RefreshModule)
-		f.Combo("/new").Get(modules.New).Post(binding.JSON(form.NewModule{}), modules.NewAction)
-		f.Post("/{id}/enable", modules.SetStatus(route.Enable))
-		f.Post("/{id}/disable", modules.SetStatus(route.Disable))
-		f.Get("/{id}", modules.Get)
-		f.Put("/{id}", binding.JSON(form.UpdateModule{}), modules.Update)
-		f.Delete("/{id}", modules.Delete)
-	})
-
-	chromeDp := route.NewChromeDpHandler()
-	f.Group("/chromedp", func() {
-		f.Post("/", chromeDp.New)
-	})
+	f.NotFound(route.Frontend)
 
 	httpPort := c.Int("port")
 	f.Run("0.0.0.0", httpPort)
+
 	return nil
 }

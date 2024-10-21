@@ -5,11 +5,13 @@ on:
     paths:
       - '**.go'
       - 'go.mod'
+      - 'go.sum'
       - '.github/workflows/go.yml'
   pull_request:
     paths:
       - '**.go'
       - 'go.mod'
+      - 'go.sum'
       - '.github/workflows/go.yml'
 env:
   GOPROXY: "https://proxy.golang.org"
@@ -21,8 +23,25 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
+      - name: Install Go
+        uses: actions/setup-go@v5
         with:
-          version: v1.49.0
+          go-version: 1.22.x
+      - name: Create dist file
+        run: mkdir -p web/dist && touch web/dist/index.html
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.54
           args: --timeout=10m
+      - name: Check Go module tidiness
+        shell: bash
+        run: |
+          go mod tidy
+          STATUS=$(git status --porcelain)
+          if [ ! -z "$STATUS" ]; then
+            echo "Unstaged files:"
+            echo $STATUS
+            echo "Run 'go mod tidy' commit them"
+            exit 1
+          fi

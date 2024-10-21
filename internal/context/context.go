@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"github.com/flamego/flamego"
-	log "unknwon.dev/clog/v2"
+	"github.com/sirupsen/logrus"
 )
 
 // Context represents context of a request.
@@ -29,7 +29,7 @@ func Contexter() flamego.Handler {
 	}
 }
 
-func (c *Context) Success(data ...interface{}) {
+func (c *Context) Success(data ...interface{}) error {
 	c.ResponseWriter().Header().Set("Content-Type", "application/json")
 	c.ResponseWriter().WriteHeader(http.StatusOK)
 
@@ -40,24 +40,22 @@ func (c *Context) Success(data ...interface{}) {
 		d = ""
 	}
 
-	err := json.NewEncoder(c.ResponseWriter()).Encode(
+	if err := json.NewEncoder(c.ResponseWriter()).Encode(
 		map[string]interface{}{
-			"error": 0,
-			"data":  d,
+			"msg":  "success",
+			"data": d,
 		},
-	)
-	if err != nil {
-		log.Error("Failed to encode: %v", err)
+	); err != nil {
+		logrus.WithContext(c.Request().Context()).WithError(err).Error("Failed to encode JSON response")
 	}
+	return nil
 }
 
-func (c *Context) ServerError() {
-	c.Error(http.StatusInternalServerError*100, "Internal server error")
+func (c *Context) ServerError() error {
+	return c.Error(http.StatusInternalServerError, "Internal server error")
 }
 
-func (c *Context) Error(errorCode uint, message string, v ...interface{}) {
-	statusCode := int(errorCode / 100)
-
+func (c *Context) Error(statusCode int, message string, v ...interface{}) error {
 	c.ResponseWriter().Header().Set("Content-Type", "application/json")
 	c.ResponseWriter().WriteHeader(statusCode)
 
@@ -65,13 +63,12 @@ func (c *Context) Error(errorCode uint, message string, v ...interface{}) {
 		message = fmt.Sprintf(message, v...)
 	}
 
-	err := json.NewEncoder(c.ResponseWriter()).Encode(
+	if err := json.NewEncoder(c.ResponseWriter()).Encode(
 		map[string]interface{}{
-			"error": errorCode,
-			"msg":   message,
+			"msg": message,
 		},
-	)
-	if err != nil {
-		log.Error("Failed to encode: %v", err)
+	); err != nil {
+		logrus.WithContext(c.Request().Context()).WithError(err).Error("Failed to encode JSON response")
 	}
+	return nil
 }

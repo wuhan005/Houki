@@ -5,5 +5,5 @@
 package form
 
 type StartProxy struct {
-	Address string
+	Address string `json:"address" valid:"required"`
 }

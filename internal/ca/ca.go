@@ -15,18 +15,21 @@ import (
 	"os"
 	"time"
 
+	cache "github.com/Code-Hex/go-generics-cache"
 	"github.com/pkg/errors"
-	log "unknwon.dev/clog/v2"
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	CommonName       = "Houki CA"
 	OrganizationName = "Houki"
+	CertificatePath  = ".certificate/ca.crt"
+	KeyPath          = ".certificate/ca.key"
 )
 
 func init() {
 	if err := createFolder(); err != nil {
-		log.Fatal("Failed to create certificate folder: %v", err)
+		logrus.WithError(err).Fatal("Failed to create certificate folder")
 	}
 }
 
@@ -41,41 +44,30 @@ func createFolder() error {
 	return nil
 }
 
+var cacheStorage = cache.New[string, []byte]()
+
 // Get trys to read certificate from file.
 // It will create the certificate if fails.
 func Get() ([]byte, []byte, error) {
+	crt, crtExists := cacheStorage.Get(CertificatePath)
+	key, keyExists := cacheStorage.Get(KeyPath)
+	if crtExists && keyExists {
+		return crt, key, nil
+	}
+
 	crt, key, err := readFromFile()
 	if err == nil {
 		return crt, key, nil
 	}
-
-	return GenerateCertificate(true)
+	return nil, nil, errors.New("certificate not found")
 }
 
-//func GetPin() ([]byte, error) {
-//	certBytes, _, err := Get()
-//	if err != nil {
-//		return nil, errors.Wrap(err, "get certificate")
-//	}
-//
-//	cert, err := x509.ParseCertificate(certBytes)
-//	if err != nil {
-//		return nil, errors.Wrap(err, "x509.ParseCertificate")
-//	}
-//	cert.PublicKey.(*ecdsa.PublicKey)
-//
-//	publicDer, err := x509.MarshalPKCS1PublicKey()
-//	if err != nil {
-//		return nil, errors.Wrap(err, "x509.MarshalPKIXPublicKey")
-//	}
-//	sum := sha256.Sum256(publicDer)
-//	pin := make([]byte, base64.StdEncoding.EncodedLen(len(sum)))
-//	base64.StdEncoding.Encode(pin, sum[:])
-//
-//	return pin, nil
-//}
+func CleanCache() {
+	cacheStorage.Delete(CertificatePath)
+	cacheStorage.Delete(KeyPath)
+}
 
-func GenerateCertificate(save bool) ([]byte, []byte, error) {
+func Generate() ([]byte, []byte, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
@@ -113,35 +105,60 @@ func GenerateCertificate(save bool) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	if save {
-		err := saveToFile(rootCrtBytes, rootKeyBytes)
-		if err != nil {
-			log.Error("Failed to save CA to file: %v", err)
-		}
-	}
-
 	return rootCrtBytes, rootKeyBytes, nil
 }
 
-func readFromFile() ([]byte, []byte, error) {
-	crt, err := os.ReadFile(".certificate/ca.crt")
-	if err != nil {
-		return nil, nil, err
+func Save(crt, key []byte) error {
+	if err := os.WriteFile(CertificatePath, crt, 0644); err != nil {
+		return errors.Wrap(err, "write certificate")
+	}
+	if err := os.WriteFile(KeyPath, key, 0644); err != nil {
+		return errors.Wrap(err, "write key")
+	}
+	return nil
+}
+
+type Metadata struct {
+	Issuer             string    `json:"issuer"`
+	ValidFrom          time.Time `json:"validFrom"`
+	ValidTo            time.Time `json:"validTo"`
+	PublicKeyAlgorithm string    `json:"publicKeyAlgorithm"`
+	SerialNumber       string    `json:"serialNumber"`
+	SignatureAlgorithm string    `json:"signatureAlgorithm"`
+}
+
+func Parse(crt []byte) (*Metadata, error) {
+	block, _ := pem.Decode(crt)
+	if block == nil {
+		return nil, errors.New("failed to parse certificate")
 	}
 
-	key, err := os.ReadFile(".certificate/ca.key")
+	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, nil, err
+		return nil, errors.Wrap(err, "parse certificate")
+	}
+
+	metadata := &Metadata{
+		Issuer:             cert.Issuer.String(),
+		ValidFrom:          cert.NotBefore,
+		ValidTo:            cert.NotAfter,
+		PublicKeyAlgorithm: cert.PublicKeyAlgorithm.String(),
+		SerialNumber:       cert.SerialNumber.String(),
+		SignatureAlgorithm: cert.SignatureAlgorithm.String(),
+	}
+	return metadata, nil
+}
+
+func readFromFile() ([]byte, []byte, error) {
+	crt, err := os.ReadFile(CertificatePath)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "read certificate")
+	}
+
+	key, err := os.ReadFile(KeyPath)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "read key")
 	}
 
 	return crt, key, nil
-}
-
-func saveToFile(crt, key []byte) error {
-	err := os.WriteFile(".certificate/ca.crt", crt, 0644)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(".certificate/ca.key", key, 0644)
 }

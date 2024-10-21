@@ -7,12 +7,13 @@ package route
 import (
 	"net/http"
 
-	"github.com/flamego/template"
-	log "unknwon.dev/clog/v2"
+	"github.com/sirupsen/logrus"
 
+	"github.com/wuhan005/Houki/internal/ca"
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/db"
 	"github.com/wuhan005/Houki/internal/form"
+	"github.com/wuhan005/Houki/internal/modules"
 	"github.com/wuhan005/Houki/internal/proxy"
 )
 
@@ -22,42 +23,79 @@ func NewProxyHandler() *ProxyHandler {
 	return &ProxyHandler{}
 }
 
-func (*ProxyHandler) Dashboard(ctx context.Context, t template.Template, data template.Data) {
-	modules, err := db.Modules.List(ctx.Request().Context(), db.GetModuleOptions{})
-	if err != nil {
-		log.Error("Failed to list modules: %v", err)
-		ctx.ServerError()
-		return
-	}
-	data["Modules"] = modules
-	data["Enabled"] = proxy.IsEnabled()
-	t.HTML(http.StatusOK, "proxy")
+func (*ProxyHandler) Status(ctx context.Context) error {
+	return ctx.Success(map[string]interface{}{
+		"forward": map[string]interface{}{
+			"enabled": proxy.Forward.IsEnabled(),
+			"address": proxy.Forward.Address(),
+		},
+		"reverse": map[string]interface{}{
+			"enabled": proxy.Reverse.IsEnabled(),
+			"address": proxy.Reverse.Address(),
+		},
+	})
 }
 
-func (*ProxyHandler) Start(ctx context.Context, f form.StartProxy) {
-	if f.Address == "" {
-		ctx.Error(40000, "Proxy address is required")
-		return
+func (*ProxyHandler) reloadAllModules(ctx context.Context) error {
+	enabledModules, err := db.Modules.All(ctx.Request().Context(), db.AllModuleOptions{
+		EnabledOnly: true,
+	})
+	if err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to list modules")
+		return ctx.ServerError()
 	}
 
-	if err := proxy.Start(f.Address); err != nil {
-		log.Error("Failed to start proxy: %v", err)
-		return
+	moduleSets := make(map[uint]*modules.Body, len(enabledModules))
+	for _, module := range enabledModules {
+		moduleSets[module.ID] = module.Body
 	}
 
-	if err := proxy.ReloadAllModules(ctx.Request().Context()); err != nil {
-		log.Error("Failed to reload modules: %v", err)
-		return
+	if err := modules.ReloadAllModules(moduleSets); err != nil {
+		logrus.WithContext(ctx.Request().Context()).WithError(err).Error("Failed to reload modules")
+		return ctx.ServerError()
 	}
-
-	ctx.Success("success")
+	return nil
 }
 
-func (*ProxyHandler) ShutDown(ctx context.Context) {
-	defer func() { ctx.Redirect("/proxy/") }()
-
-	err := proxy.Shutdown()
-	if err != nil {
-		log.Error("Failed to shutdown proxy: %v", err)
+func (h *ProxyHandler) StartForward(ctx context.Context, f form.StartProxy) error {
+	_ = h.reloadAllModules(ctx)
+	if ctx.ResponseWriter().Written() {
+		return nil
 	}
+
+	if err := proxy.Forward.SetCA(ca.CertificatePath, ca.KeyPath); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to set CA: %v", err)
+	}
+
+	if err := proxy.Forward.Start(f.Address); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
+	}
+	return ctx.Success("Forward proxy started successfully")
+}
+
+func (*ProxyHandler) ShutdownForward(ctx context.Context) error {
+	if err := proxy.Forward.Shutdown(); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to shutdown proxy: %v", err)
+	}
+	return ctx.Success("Forward proxy shutdown successfully")
+}
+
+func (h *ProxyHandler) StartReverse(ctx context.Context, f form.StartProxy) error {
+	_ = h.reloadAllModules(ctx)
+	if ctx.ResponseWriter().Written() {
+		return nil
+	}
+
+	if err := proxy.Reverse.Start(f.Address); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to start proxy: %v", err)
+	}
+
+	return ctx.Success("Reverse proxy started successfully")
+}
+
+func (*ProxyHandler) ShutdownReverse(ctx context.Context) error {
+	if err := proxy.Reverse.Shutdown(); err != nil {
+		return ctx.Error(http.StatusInternalServerError, "Failed to shutdown proxy: %v", err)
+	}
+	return ctx.Success("Reverse proxy shutdown successfully")
 }
