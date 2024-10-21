@@ -5,11 +5,13 @@ on:
     paths:
       - '**.go'
       - 'go.mod'
+      - 'go.sum'
       - '.github/workflows/go.yml'
   pull_request:
     paths:
       - '**.go'
       - 'go.mod'
+      - 'go.sum'
       - '.github/workflows/go.yml'
 env:
   GOPROXY: "https://proxy.golang.org"
@@ -24,7 +26,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
+          go-version: 1.22.x
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
