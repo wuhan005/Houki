@@ -27,6 +27,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
+      - name: Create dist file
+        run: mkdir -p web/dist && touch web/dist/index.html
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
