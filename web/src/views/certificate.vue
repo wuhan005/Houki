@@ -60,8 +60,8 @@
   import { Message } from '@arco-design/web-vue';
   import dayjs from 'dayjs';
 
-  const metadata = ref<CertificateMetadata>({});
-  const formData = ref<UpdateCertificateData>({});
+  const metadata = ref<CertificateMetadata>({} as CertificateMetadata);
+  const formData = ref<UpdateCertificateData>({} as UpdateCertificateData);
   const fetchCertificate = () => {
     getCertificate().then((res) => {
       metadata.value = res.metadata;

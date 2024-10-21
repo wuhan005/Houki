@@ -180,26 +180,23 @@
     { name: 'Large', value: 'large' },
   ];
   const COLUMNS: TableColumnData[] = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Name', dataIndex: 'name' },
     {
       title: 'Status',
       dataIndex: 'enabled',
       slotName: 'enabled',
-      key: 'enabled',
       width: 150,
     },
     {
       title: 'Created At',
       dataIndex: 'createdAt',
       slotName: 'createdAt',
-      key: 'createdAt',
       width: 200,
     },
     {
       title: 'Action',
       dataIndex: 'action',
       slotName: 'action',
-      key: 'action',
       width: 300,
     },
   ];
@@ -238,7 +235,7 @@
 
   const handleReset = () => {
     listModulesParams.value = {
-      enabledOnly: false,
+      enabled: false,
     };
     fetchTableData();
   };

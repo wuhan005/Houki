@@ -2,12 +2,12 @@ import axios from 'axios';
 
 export interface ProxyStatusResp {
   forward: {
-    status: string;
-    address: number;
+    enabled: boolean;
+    address: string;
   };
   reverse: {
-    status: string;
-    address: number;
+    enabled: boolean;
+    address: string;
   };
 }
 

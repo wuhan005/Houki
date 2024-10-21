@@ -5,9 +5,13 @@
 package cmd
 
 import (
+	"io/fs"
+	"net/http"
+
 	"github.com/flamego/flamego"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+	"github.com/wuhan005/Houki/web"
 
 	"github.com/wuhan005/Houki/internal/context"
 	"github.com/wuhan005/Houki/internal/db"
@@ -30,8 +34,16 @@ func runWeb(c *cli.Context) error {
 		return errors.Wrap(err, "new db")
 	}
 
+	fs, err := fs.Sub(web.Embed, "dist")
+	if err != nil {
+		return errors.Wrap(err, "sub fs")
+	}
+
 	f := flamego.Classic()
 	f.Use(
+		flamego.Static(flamego.StaticOptions{
+			FileSystem: http.FS(fs),
+		}),
 		context.Contexter(),
 	)
 
@@ -71,6 +83,8 @@ func runWeb(c *cli.Context) error {
 			Get(certificate.Get).
 			Put(form.Bind(form.UpdateCertificate{}), certificate.Update)
 	})
+
+	f.NotFound(route.Frontend)
 
 	httpPort := c.Int("port")
 	f.Run("0.0.0.0", httpPort)

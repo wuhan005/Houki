@@ -48,7 +48,7 @@ export interface CreateModuleData {
 }
 
 export function createModule(data: CreateModuleData) {
-  return axios.post<string, string>('/api/modules', data);
+  return axios.post<Module, Module>('/api/modules', data);
 }
 
 export interface UpdateModuleData {

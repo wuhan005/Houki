@@ -62,7 +62,7 @@
     },
   };
 
-  const formData = ref<CreateModuleData | UpdateModuleData>({});
+  const formData = ref<CreateModuleData | UpdateModuleData>({} as CreateModuleData);
 
   const fetchModule = () => {
     getModule(moduleID.value).then((res) => {
@@ -78,7 +78,7 @@
   const handleSave = () => {
     try {
       formData.value.body = JSON.parse(editorRaw.value);
-    } catch (e) {
+    } catch (e: any) {
       Message.error(`Failed to parse JSON: ${e.message}`);
       return;
     }

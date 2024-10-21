@@ -6,7 +6,7 @@
         {{ status.forward.enabled ? 'Enabled' : 'Disabled' }}
       </a-tag>
     </a-typography-title>
-    <a-form layout="inline">
+    <a-form layout="inline" :model="{}">
       <a-form-item field="Address">
         <a-input v-model="forwardAddress"></a-input>
       </a-form-item>
@@ -26,7 +26,7 @@
         {{ status.reverse.enabled ? 'Enabled' : 'Disabled' }}
       </a-tag>
     </a-typography-title>
-    <a-form layout="inline">
+    <a-form layout="inline" :model="{}">
       <a-form-item field="Address">
         <a-input v-model="reverseAddress"></a-input>
       </a-form-item>
@@ -58,9 +58,11 @@
   const status = ref<ProxyStatusResp>({
     forward: {
       enabled: false,
+      address: '',
     },
     reverse: {
       enabled: false,
+      address: '',
     },
   });
   const fetchProxyStatus = () => {
