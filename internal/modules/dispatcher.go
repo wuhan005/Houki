@@ -22,7 +22,9 @@ func (b *Body) DoRequest(req *http.Request, body []byte) {
 
 	if b.Req.TransmitURL != nil {
 		req.Host = b.Req.TransmitURL.Host
-		req.URL = b.Req.TransmitURL
+		req.URL.Scheme = b.Req.TransmitURL.Scheme
+		req.URL.Host = b.Req.TransmitURL.Host
+		req.URL.Path = b.Req.TransmitURL.Path
 	}
 
 	for k, v := range b.Req.Headers {
